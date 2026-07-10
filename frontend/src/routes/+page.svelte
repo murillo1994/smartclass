@@ -112,6 +112,7 @@
                 <img src="/logos/logo_part_1.webp" alt="Unic Clinic Part 1" class="logo-part part-1" class:animate={purposeVisible} />
                 <img src="/logos/logo_part_2.webp" alt="Unic Clinic Part 2" class="logo-part part-2" class:animate={purposeVisible} />
                 <img src="/logos/logo_part_3.webp" alt="Unic Clinic Part 3" class="logo-part part-3" class:animate={purposeVisible} />
+                <img src="/logos/logo_part_4.png" alt="Unic Clinic Part 4" class="logo-part part-4" class:animate={purposeVisible} />
             </div>
             <p class="purpose-text">
                 "Um propósito simples e admirável: aprimorar a qualidade de vida,<br class="hide-mobile"/>
@@ -578,34 +579,44 @@
         will-change: transform, opacity;
     }
 
-    /* Part 1 (evie0sSH) - slides down from top */
+    /* Part 1 (Inner right curve) - slides in from right */
     .logo-part.part-1 {
-        transform: translateY(-45px);
+        transform: translateX(45px);
         transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.4s ease-out;
     }
     .logo-part.part-1.animate {
         opacity: 0.95;
-        transform: translateY(0);
-    }
-
-    /* Part 2 (sDvt4hvX) - slides in from right */
-    .logo-part.part-2 {
-        transform: translateX(45px);
-        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s, opacity 1.4s ease-out 0.4s;
-    }
-    .logo-part.part-2.animate {
-        opacity: 0.95;
         transform: translateX(0);
     }
 
-    /* Part 3 (x6GkXa7y) - slides in from left */
+    /* Part 2 (Outer U shape) - slides down from top */
+    .logo-part.part-2 {
+        transform: translateY(-45px);
+        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.35s, opacity 1.4s ease-out 0.35s;
+    }
+    .logo-part.part-2.animate {
+        opacity: 0.95;
+        transform: translateY(0);
+    }
+
+    /* Part 3 (Inner left leaf) - slides in from left */
     .logo-part.part-3 {
         transform: translateX(-45px);
-        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.8s, opacity 1.4s ease-out 0.8s;
+        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.7s, opacity 1.4s ease-out 0.7s;
     }
     .logo-part.part-3.animate {
         opacity: 0.95;
         transform: translateX(0);
+    }
+
+    /* Part 4 (Complete Logo) - fades in at the end for perfect subpixel alignment */
+    .logo-part.part-4 {
+        transform: scale(0.98);
+        transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1) 1.1s, opacity 1.6s ease-out 1.1s;
+    }
+    .logo-part.part-4.animate {
+        opacity: 1;
+        transform: scale(1);
     }
 
     .purpose-text {
