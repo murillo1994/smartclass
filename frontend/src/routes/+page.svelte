@@ -13,7 +13,11 @@
         { name: "Flacidez de Pálpebras", img: "/images/pálpebras-flácidas.jpg" },
         { name: "Remoção de Tatuagem", img: "/images/remoção-de-tatuagem.jpg" },
     ];
+    let scrollY = 0;
+    $: purposeOffset = Math.max(-180, Math.min(180, (scrollY - 1300) * -0.22));
 </script>
+
+<svelte:window bind:scrollY={scrollY} />
 
 <svelte:head>
     <title>Unic Clinic — Descubra a leveza de se cuidar</title>
@@ -85,9 +89,9 @@
     </section>
 
     <!-- ===== PURPOSE ===== -->
-    <section class="section section-white text-center">
+    <section class="section section-white text-center purpose-section">
         <div class="purpose-wrap">
-            <img src="/logos/unic_clinic_icone_cinza.png" alt="Unic Clinic" class="purpose-icon" />
+            <img src="/logos/unic_clinic_icone_cinza.png" alt="Unic Clinic" class="purpose-icon" style="transform: translateX({purposeOffset}px); transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);" />
             <p class="purpose-text">
                 "Um propósito simples e admirável: aprimorar a qualidade de vida,<br class="hide-mobile"/>
                 a saúde da pele e restaurar a autoconfiança de nossos pacientes<br class="hide-mobile"/>
@@ -523,6 +527,10 @@
     /* =========================================
        PURPOSE
     ========================================= */
+    .purpose-section {
+        overflow: hidden;
+    }
+
     .purpose-wrap {
         max-width: 680px;
         margin: 0 auto;
@@ -533,10 +541,11 @@
     }
 
     .purpose-icon {
-        width: 64px;
-        height: 64px;
+        width: 110px;
+        height: 110px;
         object-fit: contain;
-        opacity: 0.6;
+        opacity: 0.8;
+        will-change: transform;
     }
 
     .purpose-text {
