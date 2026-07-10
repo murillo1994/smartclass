@@ -20,7 +20,7 @@
 </svelte:head>
 
 <div class="page-wrap">
-    <Header logo="/logos/unic_clinic_logo_1_marrom.png" />
+    <Header logo="/logos/unic_clinic_logo_marrom_hd.png" />
 
     <!-- ===== HERO ===== -->
     <section class="hero">
