@@ -1,18 +1,18 @@
-# API Routes Contract: CRM Backend & Frontend Integration
+# Contrato de Rotas de API: Integração CRM Backend & Frontend
 
-This contract details the endpoints exposed by the Python Flask backend for the SvelteKit admin panel.
+Este contrato detalha os endpoints expostos pelo backend em Python Flask para o consumo do painel administrativo SvelteKit.
 
-## Base URL
+## URL Base
 `/api`
 
 ---
 
-## 1. Leads Management
+## 1. Gestão de Leads
 
 ### GET `/leads`
-Retrieve all patients/leads grouped or filtered for the CRM Kanban board.
+Retorna todos os pacientes/leads agrupados ou filtrados para a visualização no quadro Kanban do CRM.
 
-**Response (200 OK):**
+**Resposta (200 OK):**
 ```json
 [
   {
@@ -32,9 +32,9 @@ Retrieve all patients/leads grouped or filtered for the CRM Kanban board.
 ```
 
 ### PATCH `/leads/<id>`
-Update a lead's profile details or Kanban stage, or toggle the AI handoff.
+Atualiza detalhes do perfil de um lead, altera a etapa do Kanban ou ativa/desativa o handoff da IA.
 
-**Request Body:**
+**Corpo da Requisição (Request Body):**
 ```json
 {
   "name": "João Silva",
@@ -43,7 +43,7 @@ Update a lead's profile details or Kanban stage, or toggle the AI handoff.
 }
 ```
 
-**Response (200 OK):**
+**Resposta (200 OK):**
 ```json
 {
   "success": true,
@@ -60,12 +60,12 @@ Update a lead's profile details or Kanban stage, or toggle the AI handoff.
 
 ---
 
-## 2. Chat & Message History
+## 2. Histórico de Conversas e Mensagens
 
 ### GET `/leads/<id>/messages`
-Fetch complete conversation transcript for a specific lead.
+Recupera o histórico completo de conversas para um determinado lead.
 
-**Response (200 OK):**
+**Resposta (200 OK):**
 ```json
 [
   {
@@ -84,16 +84,16 @@ Fetch complete conversation transcript for a specific lead.
 ```
 
 ### POST `/leads/<id>/messages`
-Send a manual message from a receptionist. Toggles `ai_enabled` to false (handoff) and sends via Evolution API.
+Envia uma mensagem manual através da recepção. Altera o campo `ai_enabled` do lead para `false` (handoff) e repassa a mensagem via Evolution API.
 
-**Request Body:**
+**Corpo da Requisição (Request Body):**
 ```json
 {
-  "content": "Olá, sou a recepcionista Maria. Vi que você tem interesse no Botox. Posso te ajudar?"
+  "content": "Olá, sou a recepcionista Maria. Vi que você tem interesse no Botox. Posso ajudar?"
 }
 ```
 
-**Response (201 Created):**
+**Resposta (201 Created):**
 ```json
 {
   "success": true,
@@ -108,12 +108,12 @@ Send a manual message from a receptionist. Toggles `ai_enabled` to false (handof
 
 ---
 
-## 3. Appointments & Schedule Grid
+## 3. Agendamentos e Calendário
 
 ### GET `/appointments`
-Fetch all appointments for calendar display. Optional query params: `start_date`, `end_date`.
+Recupera todos os agendamentos registrados para exibição na grade do calendário. Parâmetros de consulta opcionais: `start_date`, `end_date`.
 
-**Response (200 OK):**
+**Resposta (200 OK):**
 ```json
 [
   {
@@ -136,9 +136,9 @@ Fetch all appointments for calendar display. Optional query params: `start_date`
 ```
 
 ### POST `/appointments`
-Manually create an appointment from the receptionist panel.
+Cria manualmente um agendamento a partir do painel de recepção.
 
-**Request Body:**
+**Corpo da Requisição (Request Body):**
 ```json
 {
   "patient_id": 1,
@@ -147,7 +147,7 @@ Manually create an appointment from the receptionist panel.
 }
 ```
 
-**Response (201 Created):**
+**Resposta (201 Created):**
 ```json
 {
   "success": true,

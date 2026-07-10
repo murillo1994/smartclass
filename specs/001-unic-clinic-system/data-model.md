@@ -1,14 +1,14 @@
-# Data Model: Unic Clinic Database Schema
+# Modelo de Dados: Esquema de Banco de Dados Unic Clinic
 
-This document details the PostgreSQL schema designed for the Unic Clinic system. The database handles lead capture, message logs, procedures, and appointments.
+Este documento detalha o esquema do banco de dados PostgreSQL projetado para o sistema Unic Clinic. O banco gerencia a captação de leads, históricos de chat, procedimentos estéticos e a grade de agendamentos.
 
-## Entity Relationship Diagram (Conceptual)
+## Diagrama Entidade-Relacionamento (ER)
 
 ```mermaid
 erDiagram
-    PATIENTS ||--o{ APPOINTMENTS : has
-    PATIENTS ||--o{ MESSAGES : sends_receives
-    PROCEDURES ||--o{ APPOINTMENTS : scheduled_for
+    PATIENTS ||--o{ APPOINTMENTS : possui
+    PATIENTS ||--o{ MESSAGES : envia_recebe
+    PROCEDURES ||--o{ APPOINTMENTS : agendado_para
     
     PATIENTS {
         int id PK
@@ -47,62 +47,62 @@ erDiagram
     }
 ```
 
-## Table Specifications
+## Especificações das Tabelas
 
 ### 1. `patients` (Leads)
-Stores contact information for patients interacting with the clinic.
+Armazena as informações dos pacientes/leads que interagem com a clínica.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique identifier. |
-| `name` | VARCHAR(255) | NULL | Patient's name (extracted by AI or manual input). |
-| `phone` | VARCHAR(50) | UNIQUE, NOT NULL | WhatsApp identifier/number (JID or clean digits). |
-| `kanban_stage` | VARCHAR(50) | NOT NULL, DEFAULT 'novo_lead' | Stages: `novo_lead`, `qualificado`, `agendado`, `sem_interesse`. |
-| `ai_enabled` | BOOLEAN | NOT NULL, DEFAULT TRUE | Handoff flag. If `FALSE`, AI ignores incoming messages. |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Date lead was first captured. |
-| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Date lead was last updated. |
-
----
-
-### 2. `procedures`
-Pre-seeded catalog of treatments and aesthetics procedures offered by Unic Clinic.
-
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique identifier. |
-| `name` | VARCHAR(255) | NOT NULL | Name of the aesthetic procedure. |
-| `description` | TEXT | NULL | Brief info for AI context. |
-| `duration_minutes` | INTEGER | NOT NULL, DEFAULT 30 | Time slot block duration. |
-| `price` | NUMERIC(10,2) | NOT NULL | Price in local currency. |
+| Coluna | Tipo | Restrições | Descrição |
+|--------|------|------------|-----------|
+| `id` | SERIAL | PRIMARY KEY | Identificador único do paciente. |
+| `name` | VARCHAR(255) | NULL | Nome do paciente (extraído pela IA ou inserido manualmente). |
+| `phone` | VARCHAR(50) | UNIQUE, NOT NULL | Número de WhatsApp / identificador JID. |
+| `kanban_stage` | VARCHAR(50) | NOT NULL, DEFAULT 'novo_lead' | Etapas: `novo_lead`, `qualificado`, `agendado`, `sem_interesse`. |
+| `ai_enabled` | BOOLEAN | NOT NULL, DEFAULT TRUE | Flag de Handoff. Se for `FALSE`, a IA ignora as mensagens de entrada. |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data de cadastro inicial do lead. |
+| `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data da última atualização do registro. |
 
 ---
 
-### 3. `appointments`
-Tracks scheduling bookings.
+### 2. `procedures` (Procedimentos)
+Catálogo pré-semeado de tratamentos e procedimentos estéticos oferecidos pela Unic Clinic.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique identifier. |
-| `patient_id` | INTEGER | FK (patients.id), NOT NULL | Link to patient. |
-| `procedure_id` | INTEGER | FK (procedures.id), NOT NULL | Link to aesthetic procedure. |
-| `start_time` | TIMESTAMP | NOT NULL | Appointment starting time. |
-| `end_time` | TIMESTAMP | NOT NULL | Appointment ending time. |
+| Coluna | Tipo | Restrições | Descrição |
+|--------|------|------------|-----------|
+| `id` | SERIAL | PRIMARY KEY | Identificador único do procedimento. |
+| `name` | VARCHAR(255) | NOT NULL | Nome do procedimento (ex: Toxina Botulínica). |
+| `description` | TEXT | NULL | Descrição do procedimento para contexto da IA. |
+| `duration_minutes` | INTEGER | NOT NULL, DEFAULT 30 | Duração padrão do bloco de agendamento. |
+| `price` | NUMERIC(10,2) | NOT NULL | Preço do procedimento. |
+
+---
+
+### 3. `appointments` (Agendamentos)
+Rastreia as consultas reservadas na clínica.
+
+| Coluna | Tipo | Restrições | Descrição |
+|--------|------|------------|-----------|
+| `id` | SERIAL | PRIMARY KEY | Identificador único da reserva. |
+| `patient_id` | INTEGER | FK (patients.id), NOT NULL | Associação com o paciente. |
+| `procedure_id` | INTEGER | FK (procedures.id), NOT NULL | Associação com o procedimento estético. |
+| `start_time` | TIMESTAMP | NOT NULL | Horário de início do agendamento. |
+| `end_time` | TIMESTAMP | NOT NULL | Horário de término do agendamento. |
 | `status` | VARCHAR(50) | NOT NULL, DEFAULT 'confirmed' | Status: `confirmed`, `canceled`. |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Timestamp of creation. |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data de criação do agendamento. |
 
-*Constraints:*
+*Restrições (Constraints):*
 - `CHECK (end_time > start_time)`
-- A unique index / constraint or transaction lock will ensure that there are no overlapping schedules for a given receptionist/room (or general clinic slot availability limits).
+- Uma restrição transacional e travas de banco serão aplicadas para garantir que não haja sobreposição de horários livres concorrentes.
 
 ---
 
-### 4. `messages`
-Audit trail and context log for all incoming and outgoing text interactions.
+### 4. `messages` (Mensagens)
+Histórico completo de auditoria e contexto para todas as interações de chat.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | SERIAL | PRIMARY KEY | Unique identifier. |
-| `patient_id` | INTEGER | FK (patients.id), NOT NULL | Link to patient conversation. |
-| `sender` | VARCHAR(50) | NOT NULL | Who sent the message: `patient`, `ai`, `agent`. |
-| `content` | TEXT | NOT NULL | Message text body. |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Timestamp when sent/received. |
+| Coluna | Tipo | Restrições | Descrição |
+|--------|------|------------|-----------|
+| `id` | SERIAL | PRIMARY KEY | Identificador único da mensagem. |
+| `patient_id` | INTEGER | FK (patients.id), NOT NULL | Associação com a conversa do paciente. |
+| `sender` | VARCHAR(50) | NOT NULL | Remetente da mensagem: `patient`, `ai`, `agent`. |
+| `content` | TEXT | NOT NULL | Corpo de texto da mensagem. |
+| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data/hora em que a mensagem foi criada. |

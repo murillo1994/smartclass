@@ -1,59 +1,59 @@
-# Research & Technical Decisions: Unic Clinic System
+# Pesquisas e Decisões Técnicas: Sistema Unic Clinic
 
-This document outlines the technical research, decision-making process, and architectural rationale for the Unic Clinic system.
+Este documento descreve as pesquisas técnicas, o processo de tomada de decisão e a lógica arquitetural do ecossistema da Unic Clinic.
 
-## 1. Evolution API Integration (WhatsApp Service)
+## 1. Integração com Evolution API (Serviço de WhatsApp)
 
-### Decision
-Integrate with Evolution API via HTTP webhooks for receiving incoming WhatsApp messages, and use its HTTP API for sending outgoing messages.
+### Decisão
+Integrar com a Evolution API através de webhooks HTTP para receber mensagens recebidas no WhatsApp e utilizar sua API HTTP para enviar mensagens de resposta.
 
-### Rationale
-Evolution API is an enterprise-grade, high-performance API that abstracts the underlying WhatsApp Web/Cloud protocols. It is running on the same VPS, allowing local, low-latency API communication.
+### Lógica
+A Evolution API é uma API de alto desempenho que abstrai os protocolos internos do WhatsApp Web/Cloud. Ela é executada na mesma VPS, permitindo uma comunicação local e de baixíssima latência entre ela e o backend Flask.
 
-### Webhook Event Details
-- We will listen specifically to `MESSAGES_UPSERT` webhook events.
-- Incoming payload structure contains message sender details (`remoteJid`), message type (e.g., text, audio, image), and text content.
-- Response payload for sending message: `POST /message/sendText/{instanceName}` with headers `apikey` and JSON body `{"number": "...", "text": "..."}`.
+### Detalhes do Evento do Webhook
+- Escutaremos especificamente os eventos do tipo `MESSAGES_UPSERT`.
+- O payload de entrada contém detalhes do remetente (`remoteJid`), tipo da mensagem (ex: texto, áudio, imagem) e o conteúdo de texto.
+- Endpoint de envio: `POST /message/sendText/{instanceName}` com os headers `apikey` e corpo JSON contendo `{"number": "...", "text": "..."}`.
 
-### Alternatives Considered
-- *Official WhatsApp Cloud API*: Rejected due to high startup friction, pricing per conversation, and strict template requirements for outbound messaging, which restricts natural conversational flows.
-
----
-
-## 2. LLM Orchestration & Database Function Calling
-
-### Decision
-Use Python Flask backend with the official `openai` Python SDK. The agent is run with GPT-4o (or GPT-4o-mini for cost-efficiency) using the **Assistant API** or standard **Chat Completions with Function Calling (Tools)** in a loop.
-We will define tools:
-1. `check_available_slots(date: str)`: Returns list of free time slots for a given date.
-2. `book_appointment(patient_name: str, phone: str, procedure_id: int, start_time: str)`: Books the slot in the database.
-3. `get_procedures()`: Lists available procedures with prices and durations.
-
-### Rationale
-Function Calling allows the model to act as a database controller in a structured, safe manner. The LLM generates the JSON arguments, and our Python backend executes the database queries, preventing direct SQL injection by the LLM.
+### Alternativas Consideradas
+- *API Oficial do WhatsApp Cloud*: Rejeitada devido à alta fricção de configuração inicial, cobrança por sessão de conversa e necessidade estrita de modelos de templates pré-aprovados para mensagens ativas, o que inviabilizaria a conversa fluida com a IA.
 
 ---
 
-## 3. Database Schema (PostgreSQL)
+## 2. Orquestração de LLM e Function Calling
 
-### Decision
-Create a relational PostgreSQL database with tables for:
-- `patients` (leads): tracks contact info and active stage in Kanban.
-- `messages`: tracks full chat history for CRM visibility and LLM context.
-- `procedures`: pre-seeded clinic services.
-- `appointments`: schedules associated with a patient and procedure.
+### Decisão
+Utilizar o backend Flask em Python com o SDK oficial da OpenAI (`openai`). O agente executará com o modelo GPT-4o (ou GPT-4o-mini para economia de custos) usando chamadas de funções (**Chat Completions com Function Calling**) em um loop de conversação.
+Definiremos as seguintes funções para a IA:
+1. `check_available_slots(date: str)`: Retorna os horários livres na grade de agendamentos para uma determinada data.
+2. `book_appointment(patient_name: str, phone: str, procedure_id: int, start_time: str)`: Efetua a reserva do horário no banco de dados.
+3. `get_procedures()`: Retorna a lista de procedimentos disponíveis na clínica com preços e durações.
 
-### Rationale
-PostgreSQL ensures ACID transactional consistency, which is vital for preventing double-booking of appointment slots.
+### Lógica
+O Function Calling permite que a LLM aja como um controlador de dados estruturado e seguro. O modelo gera os argumentos JSON, e o backend em Python executa as consultas no banco de dados. Isso previne injeção direta de SQL e permite validação rigorosa dos parâmetros pelo backend.
 
 ---
 
-## 4. Frontend Framework (SvelteKit + Tailwind CSS)
+## 3. Modelo de Banco de Dados (PostgreSQL)
 
-### Decision
-Implement SvelteKit for both the public-facing landing page and the CRM admin dashboard. 
+### Decisão
+Criar um banco de dados relacional PostgreSQL com tabelas dedicadas para:
+- `patients` (leads): rastreia contatos e a etapa ativa no Kanban.
+- `messages`: armazena o histórico do chat para visualização no CRM e envio de contexto para a IA.
+- `procedures`: lista de procedimentos estéticos oferecidos pela clínica.
+- `appointments`: agendamentos com associação a paciente e procedimento.
 
-### Rationale
-- **Performance**: SvelteKit supports static site generation (SSG) and server-side rendering (SSR), enabling lightning-fast loads for public marketing pages.
-- **Reactivity**: SvelteKit provides clean state management and simple transitions, making the Kanban CRM interface highly responsive.
-- **Tailwind CSS**: Ideal for building the premium boutique clinic UI with minimal styling overhead.
+### Lógica
+O PostgreSQL garante consistência transacional ACID, o que é fundamental para evitar a reserva dupla (concorrência no mesmo horário de agendamento).
+
+---
+
+## 4. Framework Frontend (SvelteKit + Tailwind CSS)
+
+### Decisão
+Implementar SvelteKit tanto para a landing page institucional pública quanto para o painel CRM administrativo da clínica.
+
+### Lógica
+- **Desempenho**: SvelteKit suporta geração de páginas estáticas (SSG) e renderização no servidor (SSR), o que garante carregamentos instantâneos cruciais para campanhas de tráfego pago.
+- **Reatividade**: Gerenciamento de estado direto e transições nativas eficientes do Svelte, ideais para o comportamento dinâmico do Kanban do CRM.
+- **Tailwind CSS**: Agiliza a criação de uma interface premium e minimalista de clínica-boutique.

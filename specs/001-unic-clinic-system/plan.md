@@ -1,47 +1,47 @@
-# Implementation Plan: Unic Clinic System Overview
+# Plano de Implementação: Visão Geral do Sistema Unic Clinic
 
-**Branch**: `001-unic-clinic-system` | **Date**: 2026-07-10 | **Spec**: [spec.md](file:///c:/Users/muril/unic_clinic/specs/001-unic-clinic-system/spec.md)
-**Input**: Feature specification from `/specs/001-unic-clinic-system/spec.md`
+**Branch**: `001-unic-clinic-system` | **Data**: 10-07-2026 | **Especificação**: [spec.md](file:///c:/Users/muril/unic_clinic/specs/001-unic-clinic-system/spec.md)
+**Entrada**: Especificação da funcionalidade em `/specs/001-unic-clinic-system/spec.md`
 
-## Summary
+## Resumo
 
-The Unic Clinic system is a custom lead capture, scheduling, and CRM platform. The system uses a SvelteKit frontend for the premium client landing page and receptionist CRM panel, and a Python Flask backend to handle logic, database storage (PostgreSQL), and generative AI booking actions on WhatsApp (via Evolution API & OpenAI Function Calling).
+O sistema Unic Clinic é uma plataforma personalizada de captação de leads, agendamento e CRM. O sistema utiliza um frontend em SvelteKit para a landing page institucional de alto padrão e o painel CRM dos recepcionistas, e um backend em Python Flask para gerenciar a lógica de negócios, o armazenamento no banco de dados (PostgreSQL) e as ações automatizadas de agendamento no WhatsApp (via Evolution API e OpenAI Function Calling).
 
-## Technical Context
+## Contexto Técnico
 
-**Language/Version**: Python 3.11, Node.js 18+ (SvelteKit)  
-**Primary Dependencies**: Flask, SQLAlchemy, openai, requests, SvelteKit, tailwindcss  
-**Storage**: PostgreSQL  
-**Testing**: pytest (backend), Vitest + Playwright (frontend)  
-**Target Platform**: Linux Docker / VPS  
-**Project Type**: web-service + web-app  
-**Performance Goals**: Frontend landing page load < 1.5s, webhook turnaround < 3.0s  
-**Constraints**: Zero-downtime webhook receiver, ACID scheduling transactions to prevent slot double-booking  
-**Scale/Scope**: Boutique high-end clinic traffic scale (thousands of leads monthly, concurrent booking requests)
+**Linguagem/Versão**: Python 3.11, Node.js 18+ (SvelteKit)  
+**Dependências Principais**: Flask, SQLAlchemy, openai, requests, SvelteKit, tailwindcss  
+**Armazenamento**: PostgreSQL  
+**Testes**: pytest (backend), Vitest + Playwright (frontend)  
+**Plataforma Alvo**: Docker em Linux / VPS  
+**Tipo de Projeto**: web-service + web-app  
+**Metas de Desempenho**: Carregamento da landing page < 1.5s, tempo de resposta do webhook do WhatsApp < 3.0s  
+**Restrições**: Tratamento seguro da chave da API da OpenAI, isolamento de credenciais do banco de dados  
+**Escopo/Escala**: Fluxo de funil de leads para clínica boutique de alto padrão (milhares de leads mensais, requisições de agendamento concorrentes)
 
-## Constitution Check
+## Verificação da Constituição
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*PORTAL: Deve passar antes da pesquisa da Fase 0. Verificar novamente após o design da Fase 1.*
 
-No architectural gate violations detected. The structure uses standard, decoupled backend/frontend service containers in line with typical web applications.
+Nenhuma violação de diretrizes arquiteturais foi detectada. A estrutura utiliza contêineres de serviços desacoplados padrão (backend e frontend), em linha com as práticas recomendadas para aplicações web modernas.
 
-## Project Structure
+## Estrutura do Projeto
 
-### Documentation (this feature)
+### Documentação (desta funcionalidade)
 
 ```text
 specs/001-unic-clinic-system/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
+├── plan.md              # Este arquivo (plano de implementação)
+├── research.md          # Saída da Fase 0 (pesquisa e decisões)
+├── data-model.md        # Saída da Fase 1 (modelo de dados)
+├── quickstart.md        # Saída da Fase 1 (guia de início rápido)
+├── contracts/           # Saída da Fase 1 (contratos e esquemas de integração)
 │   ├── webhook-schema.json
 │   └── api-routes.md
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+└── tasks.md             # Saída da Fase 2 (lista de tarefas de execução)
 ```
 
-### Source Code (repository root)
+### Código Fonte (raiz do repositório)
 
 ```text
 backend/
@@ -75,9 +75,9 @@ frontend/
 │   │   ├── admin/
 │   │   │   ├── +layout.svelte
 │   │   │   └── crm/
-│   │   │       ├── +page.svelte (Kanban Dashboard)
+│   │   │       ├── +page.svelte (Dashboard Kanban)
 │   │   │       └── [leadId]/
-│   │   │           └── +page.svelte (Chat & Lead Detail)
+│   │   │           └── +page.svelte (Visualização de Chat e Lead)
 │   │   └── services/
 │   │       └── api.js
 ├── tailwind.config.js
@@ -88,25 +88,25 @@ frontend/
 docker-compose.yml
 ```
 
-**Structure Decision**: Option 2: Web application (decoupled backend & frontend directories orchestrated via root `docker-compose.yml`).
+**Decisão de Estrutura**: Opção 2: Aplicação Web (diretórios desacoplados de backend e frontend orquestrados via `docker-compose.yml` na raiz).
 
-## Complexity Tracking
+## Rastreamento de Complexidade
 
-*No constitution violations or complex architectural overrides required.*
+*Nenhuma violação ou ajuste complexo de arquitetura foi necessário.*
 
 ---
 
-## Verification Plan
+## Plano de Verificação
 
-We will verify both components (backend & frontend) using automated test pipelines and manual inspection of flows.
+Iremos verificar ambos os componentes (backend e frontend) usando pipelines de testes automatizados e inspeção visual dos fluxos.
 
-### Automated Tests
-- **Backend Unit Tests**: Run `pytest tests/unit` to test LLM tool calling parsing, webhook routing logic, and database operations.
-- **Backend Integration Tests**: Run `pytest tests/integration` with a test database container to check appointment transaction isolation (double booking checks).
-- **Frontend Unit Tests**: Run `npm run test:unit` inside `frontend/` to verify component rendering and state updates.
+### Testes Automatizados
+- **Testes Unitários do Backend**: Rodar `pytest tests/unit` para testar o parseamento de chamadas de funções da LLM, rotas de webhook e operações do banco.
+- **Testes de Integração do Backend**: Rodar `pytest tests/integration` com um banco de dados de teste para validar o isolamento de transações de agendamento (bloqueio de reserva dupla).
+- **Testes Unitários do Frontend**: Rodar `npm run test:unit` dentro de `frontend/` para verificar a renderização de componentes e atualizações de estados.
 
-### Manual Verification
-1. Spin up docker container stack using `docker-compose up`.
-2. Access SvelteKit landing page, verify boutique aesthetic and smooth scrolling.
-3. Access CRM dashboard admin panels, check Kanban visual hierarchy and layout responsiveness.
-4. Send mock WhatsApp webhook payloads to backend, verify correct database inserts and AI message response generation.
+### Verificação Manual
+1. Iniciar a pilha de contêineres Docker usando `docker-compose up`.
+2. Acessar a landing page do SvelteKit no navegador, validando a estética boutique e transições.
+3. Acessar o dashboard do CRM, arrastar os cards na coluna Kanban, alterar o handoff e verificar se o status atualiza imediatamente.
+4. Disparar payloads de webhook de simulação de mensagens da Evolution API para o backend e verificar as atualizações correspondentes no PostgreSQL (tabelas `patients`, `messages`, `appointments`).

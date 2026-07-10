@@ -1,95 +1,95 @@
-# Feature Specification: Unic Clinic System Overview
+# Especificação da Funcionalidade: Visão Geral do Sistema Unic Clinic
 
-**Feature Branch**: `001-unic-clinic-system`  
-**Created**: 2026-07-10  
-**Status**: Draft  
-**Input**: User description: "# 0. Visão Geral e Arquitetura (System Overview) ..."
+**Branch da Funcionalidade**: `001-unic-clinic-system`  
+**Criado em**: 10-07-2026  
+**Status**: Rascunho  
+**Entrada**: Descrição do usuário: "# 0. Visão Geral e Arquitetura (System Overview) ..."
 
-## User Scenarios & Testing *(mandatory)*
+## Cenários de Usuário e Testes *(obrigatório)*
 
-### User Story 1 - Autonomous WhatsApp Patient Capture & Scheduling (Priority: P1)
+### Caso de Uso 1 - Captação e Agendamento Autônomo de Pacientes via WhatsApp (Prioridade: P1)
 
-The system autonomously interacts with leads on WhatsApp, answers questions about clinic procedures, qualifies the patient's interests, checks the schedule grid, and inserts real bookings into the database.
+O sistema interage de forma autônoma com os leads no WhatsApp, responde a dúvidas sobre os procedimentos da clínica, qualifica o interesse do paciente, verifica a grade de horários e insere agendamentos reais diretamente no banco de dados.
 
-**Why this priority**: It is the core value proposition of the system (digital concierge) which frees the human reception team from repetitive booking flows and converts visitors into scheduled patients.
+**Por que esta prioridade**: É a principal proposta de valor do sistema (concierge digital), liberando a equipe de recepção humana de fluxos repetitivos de agendamento e convertendo visitantes em pacientes agendados.
 
-**Independent Test**: Can be tested end-to-end by simulating incoming WhatsApp webhook messages for a mock patient, checking that the AI generates correct responses, checks availability, and creates an appointment in the database.
+**Teste Independente**: Pode ser testado de ponta a ponta simulando mensagens de webhook do WhatsApp recebidas para um paciente fictício, verificando se a IA gera respostas corretas, valida a disponibilidade e cria um agendamento no banco de dados.
 
-**Acceptance Scenarios**:
+**Cenários de Aceitação**:
 
-1. **Given** a new lead messages the clinic WhatsApp asking about a specific procedure (e.g., botox), **When** the message is processed, **Then** the digital concierge responds with context-aware information reflecting the clinic's premium aesthetic.
-2. **Given** a patient asks to book an appointment for a specific day and time, **When** the digital concierge calls the check-availability tool and finds it free, **Then** it registers the appointment in the database and sends a WhatsApp confirmation.
-3. **Given** a patient requests a time slot that is already booked, **When** the digital concierge checks availability, **Then** it politely informs the patient and suggests alternative slots.
-
----
-
-### User Story 2 - Receptionist Dashboard & Kanban CRM (Priority: P2)
-
-The receptionist uses a SvelteKit-based admin dashboard featuring a Kanban board to track leads through the sales pipeline, view chat histories, and manually intervene (toggle handoff) when necessary.
-
-**Why this priority**: Required for receptionists to supervise the AI, manage lead progression, and handle exceptions where human intervention is needed.
-
-**Independent Test**: Can be tested by loading the dashboard, dragging a lead card to another column, opening a chat view, and toggling the "Handoff" button.
-
-**Acceptance Scenarios**:
-
-1. **Given** a new lead initiates a conversation on WhatsApp, **When** the lead is registered, **Then** they appear in the first column ("Novo Lead") of the Kanban board in real time.
-2. **Given** a lead requires personal attention, **When** the receptionist clicks "Handoff" in the chat view, **Then** the AI is paused for that lead, and all incoming/outgoing messages are flagged as human-managed.
-3. **Given** the receptionist sends a message via the dashboard chat window, **When** submitted, **Then** the message is sent to the lead via the Evolution API WhatsApp instance.
+1. **Dado** que um novo lead envia uma mensagem no WhatsApp da clínica perguntando sobre um procedimento específico (ex: botox), **Quando** a mensagem for processada, **Então** o concierge digital responde com informações contextualizadas refletindo a estética premium da clínica.
+2. **Dado** que um paciente solicita o agendamento de uma consulta em um dia e horário específicos, **Quando** o concierge digital chama a ferramenta de verificação de disponibilidade e encontra o horário livre, **Então** ele registra o agendamento no banco de dados e envia uma confirmação pelo WhatsApp.
+3. **Dado** que um paciente solicita um horário que já está ocupado, **Quando** o concierge digital verifica a disponibilidade, **Then** ele informa o paciente de forma educada e sugere horários alternativos.
 
 ---
 
-### User Story 3 - Premium Institutional Website (Priority: P3)
+### Caso de Uso 2 - Painel do Recepcionista e CRM Kanban (Prioridade: P2)
 
-A high-performance landing page representing the Unic Clinic boutique aesthetic, designed to capture visitor attention and direct them to start a conversation on WhatsApp.
+O recepcionista utiliza um painel administrativo baseado em SvelteKit com um quadro Kanban para acompanhar os leads pelo funil de vendas, visualizar o histórico de conversas e intervir manualmente (ativar o handoff) quando necessário.
 
-**Why this priority**: The entry point for online traffic (paid ads), essential for converting visitors into leads.
+**Por que esta prioridade**: Necessário para que os recepcionistas supervisionem a IA, gerenciem a progressão dos leads e tratem de exceções onde a intervenção humana é necessária.
 
-**Independent Test**: Can be tested by loading the landing page and verifying its look-and-feel, performance, and the WhatsApp redirect.
+**Teste Independente**: Pode ser testado carregando o painel de controle, arrastando um card de lead para outra coluna, abrindo a visualização do chat e alternando o botão "Handoff".
 
-**Acceptance Scenarios**:
+**Cenários de Aceitação**:
 
-1. **Given** a user opens the landing page URL, **When** the page loads, **Then** it displays high-quality styling, custom typography, and smooth micro-animations.
-2. **Given** a user clicks the "Agendar Consulta" call-to-action button, **When** clicked, **Then** it redirects them to WhatsApp with a pre-configured welcoming message.
+1. **Dado** que um novo lead inicia uma conversa no WhatsApp, **Quando** o lead é cadastrado, **Então** ele aparece na primeira coluna ("Novo Lead") do painel Kanban em tempo real.
+2. **Dado** que um lead precisa de atenção humana personalizada, **Quando** o recepcionista clica em "Handoff" na visualização do chat, **Então** a IA é pausada para aquele lead e todas as mensagens recebidas e enviadas são marcadas como gerenciadas por humano.
+3. **Dado** que o recepcionista envia uma mensagem pela janela de chat do painel, **Quando** enviada, **Então** a mensagem é enviada ao lead através da instância de WhatsApp da Evolution API.
 
 ---
 
-### Edge Cases
+### Caso de Uso 3 - Site Institucional Premium (Prioridade: P3)
 
-- **OpenAI API Downtime/Timeout**: If the OpenAI API fails, the backend must return a friendly default fallback message (e.g., "Desculpe, estou com uma instabilidade. Um de nossos atendentes irá falar com você em breve.") and flag the lead in the CRM for manual intervention.
-- **Double Booking**: If two patients try to book the same slot at the same time, database transaction isolation or constraints must prevent double booking, showing the error gracefully to the second flow.
-- **Media/Audio Messages**: If a patient sends an audio message or image, the system should either notify the receptionist for manual triage or attempt to transcribe it (if Whisper is enabled) or politely ask for text.
+Uma página de destino (landing page) de alto desempenho que representa a estética boutique da Unic Clinic, desenhada para capturar a atenção do visitante e direcioná-lo para iniciar uma conversa no WhatsApp.
 
-## Requirements *(mandatory)*
+**Por que esta prioridade**: O ponto de entrada para o tráfego online (anúncios pagos), essencial para converter visitantes em leads.
 
-### Functional Requirements
+**Teste Independente**: Pode ser testado carregando a landing page e verificando o design, o desempenho e o redirecionamento para o WhatsApp.
 
-- **FR-001**: System MUST process incoming WhatsApp webhooks from the Evolution API `unic_clinic` instance.
-- **FR-002**: System MUST integrate with OpenAI API using Function Calling to allow the AI to read/write schedule slots and lead details.
-- **FR-003**: System MUST expose a scheduling grid checking real-time availability in PostgreSQL.
-- **FR-004**: System MUST provide a SvelteKit-based admin CRM panel with Kanban column stages for leads.
-- **FR-005**: System MUST support a "Handoff" mechanism to pause the IA agent when a receptionist takes manual control.
-- **FR-006**: System MUST persist all patient info, message history, procedures, and calendar schedules in PostgreSQL.
-- **FR-007**: System MUST render a premium, minimalist institutional website optimized for fast loading and boutique branding.
+**Cenários de Aceitação**:
 
-### Key Entities *(include if feature involves data)*
+1. **Dado** que um usuário abre a URL da landing page, **Quando** a página é carregada, **Então** ela exibe uma estilização de alta qualidade, tipografia personalizada e microanimações suaves.
+2. **Dado** que um usuário clica no botão de chamada para ação "Agendar Consulta", **Quando** clicado, **Então** ele é redirecionado para o WhatsApp com uma mensagem de boas-vindas pré-configurada.
 
-- **Patient (Lead)**: Represents the client. Fields: ID, Name, Phone Number, Stage (New, Qualified, Scheduled, Lost), AI Status (Active/Paused).
-- **Message**: Represents a chat message. Fields: ID, Patient ID, Sender (Patient, AI, Agent), Text Content, Timestamp.
-- **Procedure**: Represents services offered. Fields: ID, Name, Description, Duration, Price.
-- **Appointment**: Represents a booked slot. Fields: ID, Patient ID, Procedure ID, Start Time, End Time, Status (Scheduled, Completed, Canceled).
+---
 
-## Success Criteria *(mandatory)*
+### Casos de Borda (Edge Cases)
 
-### Measurable Outcomes
+- **Instabilidade/Queda da API da OpenAI**: Se a API da OpenAI falhar, o backend deve retornar uma mensagem amigável padrão (ex: "Desculpe, estou com uma instabilidade. Um de nossos atendentes irá falar com você em breve.") e sinalizar o lead no CRM para intervenção manual.
+- **Reserva Dupla (Overbooking)**: Se dois pacientes tentarem agendar o mesmo horário simultaneamente, a transação ou restrições do banco de dados devem impedir a duplicidade, exibindo o erro de forma amigável no fluxo do segundo paciente.
+- **Mensagens de Mídia/Áudio**: Se um paciente enviar uma mensagem de áudio ou imagem, o sistema deve notificar o recepcionista para triagem manual ou tentar transcrever (se o Whisper estiver ativo) ou pedir educadamente que envie texto.
 
-- **SC-001**: Patients can complete booking flows autonomously on WhatsApp in under 3 minutes.
-- **SC-002**: SvelteKit dashboard updates in real-time when webhooks receive messages or leads change stages.
-- **SC-003**: Website loads in under 1.5 seconds on standard mobile networks.
-- **SC-004**: The system processes incoming WhatsApp webhooks and triggers AI response in under 3 seconds.
+## Requisitos *(obrigatório)*
 
-## Assumptions
+### Requisitos Funcionais
 
-- We have full access to a working Evolution API instance running on the same VPS or reachable locally.
-- The PostgreSQL database will be run as a Docker container `unic_db` and will be persistent.
-- OpenAI API credentials (API Key) are available and valid.
+- **RF-001**: O sistema DEVE processar webhooks de entrada da Evolution API referentes à instância `unic_clinic`.
+- **RF-002**: O sistema DEVE integrar-se à API da OpenAI utilizando Function Calling para permitir que a IA consulte/reserve horários e gerencie detalhes do lead.
+- **RF-003**: O sistema DEVE expor uma grade de agendamento verificando a disponibilidade em tempo real no PostgreSQL.
+- **RF-004**: O sistema DEVE fornecer um painel CRM baseado em SvelteKit com colunas de etapas Kanban para os leads.
+- **RF-005**: O sistema DEVE suportar um mecanismo de "Handoff" para pausar o agente de IA quando um recepcionista assumir o controle manual.
+- **RF-006**: O sistema DEVE persistir todas as informações de pacientes, histórico de mensagens, procedimentos e agendamentos no PostgreSQL.
+- **RF-007**: O sistema DEVE renderizar um site institucional premium e minimalista, otimizado para carregamento rápido e com identidade visual de marca boutique.
+
+### Entidades Chave *(incluir se a funcionalidade envolver dados)*
+
+- **Paciente (Lead)**: Representa o cliente. Campos: ID, Nome, Telefone, Etapa Kanban (Novo, Qualificado, Agendado, Sem Interesse), Status da IA (Ativa/Pausada).
+- **Mensagem**: Representa uma mensagem do chat. Campos: ID, ID do Paciente, Remetente (Paciente, IA, Agente), Conteúdo de Texto, Data/Hora.
+- **Procedimento**: Representa os serviços oferecidos. Campos: ID, Nome, Descrição, Duração, Preço.
+- **Agendamento**: Representa uma consulta reservada. Campos: ID, ID do Paciente, ID do Procedimento, Horário de Início, Horário de Fim, Status (Confirmado, Concluído, Cancelado).
+
+## Critérios de Sucesso *(obrigatório)*
+
+### Resultados Mensuráveis
+
+- **CS-001**: Pacientes devem conseguir concluir o fluxo de agendamento de forma autônoma no WhatsApp em menos de 3 minutos.
+- **CS-002**: O painel do SvelteKit deve atualizar em tempo real quando novas mensagens chegarem via webhook ou os leads mudarem de etapa.
+- **CS-003**: O site institucional deve carregar em menos de 1,5 segundos em conexões móveis padrão.
+- **CS-004**: O sistema deve processar o webhook do WhatsApp de entrada e disparar a resposta da IA em menos de 3 segundos.
+
+## Premissas
+
+- Temos acesso completo a uma instância funcional da Evolution API executando no mesmo servidor VPS ou acessível localmente.
+- O banco de dados PostgreSQL funcionará como um contêiner Docker `unic_db` e será persistente.
+- As credenciais da API da OpenAI (Chave de API) estão disponíveis e são válidas.
