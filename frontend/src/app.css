@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for premium styling theme */
+body {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  background-color: #0a0d10;
+  color: #ffffff;
+}
+
+/* Elegant scrollbar styling for lists and Kanban board */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12161b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a323d;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c5a880;
+}

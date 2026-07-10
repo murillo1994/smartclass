@@ -84,9 +84,9 @@
 
 ### Implementação para o Caso de Uso 3
 
-- [ ] T022 [US3] Desenvolver a página de destino (landing page) boutique com microanimações e CTA de agendamento em `frontend/src/routes/+page.svelte`
-- [ ] T023 [US3] Configurar a folha de estilo e paleta de cores Tailind CSS em `frontend/tailwind.config.js`
-- [ ] T024 [US3] Definir o layout global e importações de fontes sofisticadas (Outfit/Inter) em `frontend/src/routes/+layout.svelte`
+- [x] T022 [US3] Desenvolver a página de destino (landing page) boutique com microanimações e CTA de agendamento em `frontend/src/routes/+page.svelte`
+- [x] T023 [US3] Configurar a folha de estilo e paleta de cores Tailind CSS em `frontend/tailwind.config.js`
+- [x] T024 [US3] Definir o layout global e importações de fontes sofisticadas (Outfit/Inter) em `frontend/src/routes/+layout.svelte`
 
 ---
 
