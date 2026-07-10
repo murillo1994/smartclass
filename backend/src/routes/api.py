@@ -37,7 +37,7 @@ def update_lead(lead_id):
     """
     Atualiza o nome, a etapa do Kanban ou o status de handoff da IA para um lead.
     """
-    patient = Patient.query.get_or_400% if not Patient.query.get(lead_id) else Patient.query.get(lead_id)
+    patient = Patient.query.get(lead_id)
     if not patient:
         return jsonify({"error": "Lead não encontrado"}), 404
         
