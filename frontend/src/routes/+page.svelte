@@ -223,11 +223,13 @@
     ========================================= */
     .hero {
         position: relative;
-        min-height: 92vh;
+        min-height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        padding-top: 65px;
+        box-sizing: border-box;
     }
 
     .hero-bg {
@@ -300,14 +302,14 @@
 
     .hero-scroll {
         position: absolute;
-        bottom: 2rem;
+        bottom: 1.2rem;
         left: 50%;
         transform: translateX(-50%);
         z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
         opacity: 0.5;
     }
 
@@ -320,7 +322,7 @@
 
     .scroll-line {
         width: 1px;
-        height: 48px;
+        height: 36px;
         background: linear-gradient(to bottom, #faf8f5, transparent);
         animation: pulse 2s infinite;
     }
