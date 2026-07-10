@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    DATABASE_URL = os.getenv(
+    SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL", 
         "postgresql://unic_admin:unic_secure_pass@localhost:5432/unic_clinic_db"
     )
+    DATABASE_URL = SQLALCHEMY_DATABASE_URI
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
     EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY")
