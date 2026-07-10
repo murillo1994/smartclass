@@ -1,7 +1,7 @@
 <script>
     import Header from '../components/Header.svelte';
 
-    const whatsappNumber = "5511999999999";
+    const whatsappNumber = "5512999999999";
     const whatsappMessage = "Olá! Vim do site da Unic Clinic e gostaria de agendar uma consulta de avaliação.";
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(whatsappMessage)}`;
 
@@ -192,8 +192,8 @@
             <div class="footer-col">
                 <h4 class="footer-heading">Contato &amp; Redes</h4>
                 <p class="footer-text">
-                    Telefone: (11) 3303-0022<br/>
-                    WhatsApp: (11) 99999-9999
+                    Telefone: (12) 9999-9999<br/>
+                    WhatsApp: (12) 99999-9999
                 </p>
                 <div class="footer-links">
                     <a href="https://www.instagram.com/unic_clinic" target="_blank" rel="noopener noreferrer" class="footer-link">@unic_clinic</a>
