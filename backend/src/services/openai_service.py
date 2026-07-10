@@ -22,6 +22,11 @@ Instruções importantes:
 3. Colete o nome do cliente educadamente se você ainda não souber.
 4. Mantenha as respostas concisas e adequadas ao WhatsApp (evite textos longos demais, use quebras de linha para facilitar a leitura).
 5. Seja empático e transmita exclusividade.
+6. Gerencie ativamente a classificação do lead no funil de vendas (Kanban) chamando a ferramenta correspondente:
+   - Chame 'update_lead_stage' com o valor 'qualificacao' assim que você souber o nome do paciente e o procedimento que ele tem interesse.
+   - Chame 'update_lead_stage' com o valor 'agendamento_pendente' quando ele demonstrar interesse explícito em agendar e pedir por disponibilidade de dias/horários livres.
+   - Chame 'update_lead_stage' com o valor 'perdido' se ele disser que não quer mais nada, achar caro ou recusar o atendimento educadamente.
+   (Nota: O estágio 'agendado' é definido automaticamente no banco de dados quando você chama 'book_appointment', então não precisa atualizá-lo manualmente para 'agendado').
 """
 
 # Tool definitions for OpenAI Function Calling
@@ -76,6 +81,24 @@ TOOLS = [
                     }
                 },
                 "required": ["patient_name", "procedure_id", "start_time"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_lead_stage",
+            "description": "Atualiza a etapa do funil de vendas (Kanban) para o cliente correspondente com base no progresso da conversa.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "stage": {
+                        "type": "string",
+                        "enum": ["qualificacao", "agendamento_pendente", "perdido"],
+                        "description": "A nova etapa do funil: 'qualificacao' (se souber o nome e procedimento de interesse), 'agendamento_pendente' (se o cliente demonstrar claro interesse em agendar e pedir horários livres), ou 'perdido' (se o cliente recusar/desistir)."
+                    }
+                },
+                "required": ["stage"]
             }
         }
     }
@@ -263,6 +286,11 @@ class OpenAIService:
                         if "success" in tool_result and function_args.get("patient_name"):
                             patient.name = function_args.get("patient_name")
                             db.session.commit()
+                    elif function_name == "update_lead_stage":
+                        stage = function_args.get("stage")
+                        patient.kanban_stage = stage
+                        db.session.commit()
+                        tool_result = {"success": True, "stage": stage}
                     else:
                         tool_result = {"error": f"Função {function_name} desconhecida."}
 
@@ -286,11 +314,6 @@ class OpenAIService:
             # 3. Salvar resposta da IA no histórico de mensagens
             ai_msg = Message(patient_id=patient.id, sender='bot', content=final_text)
             db.session.add(ai_msg)
-            
-            # Atualiza qualificação se agendado
-            if patient.kanban_stage == 'lead_novo' and "agendado" in final_text.lower():
-                patient.kanban_stage = 'agendado'
-
             db.session.commit()
             return final_text
 
