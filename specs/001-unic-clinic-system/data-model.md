@@ -14,7 +14,7 @@ erDiagram
         int id PK
         string name
         string phone UK
-        string kanban_stage
+        enum_fase_funil kanban_stage
         boolean ai_enabled
         timestamp created_at
         timestamp updated_at
@@ -34,20 +34,29 @@ erDiagram
         int procedure_id FK
         timestamp start_time
         timestamp end_time
-        string status
+        enum_status_agenda status
         timestamp created_at
     }
     
     MESSAGES {
         int id PK
         int patient_id FK
-        string sender
+        enum_origem_msg sender
         text content
         timestamp created_at
     }
 ```
 
-## Especificações das Tabelas
+## Especificações das Tabelas e Enums
+
+### Tipos Enums Customizados (PostgreSQL)
+
+1. **`enum_fase_funil`:** `'lead_novo'`, `'qualificacao'`, `'agendamento_pendente'`, `'agendado'`, `'perdido'`, `'concluido'`.
+2. **`enum_origem_msg`:** `'paciente'`, `'bot'`, `'recepcao'`.
+3. **`enum_status_agenda`:** `'pendente'`, `'confirmado'`, `'cancelado'`, `'compareceu'`, `'no_show'`.
+4. **`enum_tipo_midia`:** `'texto'`, `'audio'`, `'imagem'`, `'video'`, `'documento'`.
+
+---
 
 ### 1. `patients` (Leads)
 Armazena as informações dos pacientes/leads que interagem com a clínica.
@@ -57,7 +66,7 @@ Armazena as informações dos pacientes/leads que interagem com a clínica.
 | `id` | SERIAL | PRIMARY KEY | Identificador único do paciente. |
 | `name` | VARCHAR(255) | NULL | Nome do paciente (extraído pela IA ou inserido manualmente). |
 | `phone` | VARCHAR(50) | UNIQUE, NOT NULL | Número de WhatsApp / identificador JID. |
-| `kanban_stage` | VARCHAR(50) | NOT NULL, DEFAULT 'novo_lead' | Etapas: `novo_lead`, `qualificado`, `agendado`, `sem_interesse`. |
+| `kanban_stage` | enum_fase_funil | NOT NULL, DEFAULT 'lead_novo' | Etapa ativa do lead no funil de vendas. |
 | `ai_enabled` | BOOLEAN | NOT NULL, DEFAULT TRUE | Flag de Handoff. Se for `FALSE`, a IA ignora as mensagens de entrada. |
 | `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data de cadastro inicial do lead. |
 | `updated_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data da última atualização do registro. |
@@ -87,12 +96,12 @@ Rastreia as consultas reservadas na clínica.
 | `procedure_id` | INTEGER | FK (procedures.id), NOT NULL | Associação com o procedimento estético. |
 | `start_time` | TIMESTAMP | NOT NULL | Horário de início do agendamento. |
 | `end_time` | TIMESTAMP | NOT NULL | Horário de término do agendamento. |
-| `status` | VARCHAR(50) | NOT NULL, DEFAULT 'confirmed' | Status: `confirmed`, `canceled`. |
+| `status` | enum_status_agenda | NOT NULL, DEFAULT 'confirmado' | Estado do agendamento no funil. |
 | `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data de criação do agendamento. |
 
 *Restrições (Constraints):*
 - `CHECK (end_time > start_time)`
-- Uma restrição transacional e travas de banco serão aplicadas para garantir que não haja sobreposição de horários livres concorrentes.
+- Uma restrição transacional garante que não haja sobreposição de horários livres concorrentes.
 
 ---
 
@@ -103,6 +112,6 @@ Histórico completo de auditoria e contexto para todas as interações de chat.
 |--------|------|------------|-----------|
 | `id` | SERIAL | PRIMARY KEY | Identificador único da mensagem. |
 | `patient_id` | INTEGER | FK (patients.id), NOT NULL | Associação com a conversa do paciente. |
-| `sender` | VARCHAR(50) | NOT NULL | Remetente da mensagem: `patient`, `ai`, `agent`. |
+| `sender` | enum_origem_msg | NOT NULL | Remetente da mensagem. |
 | `content` | TEXT | NOT NULL | Corpo de texto da mensagem. |
 | `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Data/hora em que a mensagem foi criada. |

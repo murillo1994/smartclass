@@ -19,7 +19,7 @@ Retorna todos os pacientes/leads agrupados ou filtrados para a visualização no
     "id": 1,
     "name": "João Silva",
     "phone": "5511999999999",
-    "kanban_stage": "novo_lead",
+    "kanban_stage": "lead_novo",
     "ai_enabled": true,
     "created_at": "2026-07-10T12:00:00Z",
     "updated_at": "2026-07-10T12:05:00Z",
@@ -38,7 +38,7 @@ Atualiza detalhes do perfil de um lead, altera a etapa do Kanban ou ativa/desati
 ```json
 {
   "name": "João Silva",
-  "kanban_stage": "qualificado",
+  "kanban_stage": "qualificacao",
   "ai_enabled": false
 }
 ```
@@ -51,7 +51,7 @@ Atualiza detalhes do perfil de um lead, altera a etapa do Kanban ou ativa/desati
     "id": 1,
     "name": "João Silva",
     "phone": "5511999999999",
-    "kanban_stage": "qualificado",
+    "kanban_stage": "qualificacao",
     "ai_enabled": false,
     "updated_at": "2026-07-10T12:10:00Z"
   }
@@ -70,17 +70,16 @@ Recupera o histórico completo de conversas para um determinado lead.
 [
   {
     "id": 101,
-    "sender": "patient",
+    "sender": "paciente",
     "content": "Olá, gostaria de saber os preços de botox.",
     "created_at": "2026-07-10T12:05:00Z"
   },
   {
     "id": 102,
-    "sender": "ai",
+    "sender": "bot",
     "content": "Olá! O procedimento de Toxina Botulínica (Botox) na Unic Clinic custa R$ 1.200,00...",
     "created_at": "2026-07-10T12:05:05Z"
   }
-]
 ```
 
 ### POST `/leads/<id>/messages`
@@ -99,7 +98,7 @@ Envia uma mensagem manual através da recepção. Altera o campo `ai_enabled` do
   "success": true,
   "message": {
     "id": 103,
-    "sender": "agent",
+    "sender": "recepcao",
     "content": "Olá, sou a recepcionista Maria...",
     "created_at": "2026-07-10T12:15:00Z"
   }
@@ -130,7 +129,7 @@ Recupera todos os agendamentos registrados para exibição na grade do calendár
     },
     "start_time": "2026-07-11T14:00:00Z",
     "end_time": "2026-07-11T14:30:00Z",
-    "status": "confirmed"
+    "status": "confirmado"
   }
 ]
 ```
@@ -157,7 +156,7 @@ Cria manualmente um agendamento a partir do painel de recepção.
     "procedure_id": 2,
     "start_time": "2026-07-11T14:00:00Z",
     "end_time": "2026-07-11T14:30:00Z",
-    "status": "confirmed"
+    "status": "confirmado"
   }
 }
 ```
