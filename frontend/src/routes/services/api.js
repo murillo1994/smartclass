@@ -3,10 +3,19 @@
 
 const getBaseUrl = () => {
     if (typeof window !== 'undefined') {
-        // Can be overridden at runtime
-        return window.__env__?.PUBLIC_API_URL || 'http://localhost:5000/api';
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') {
+            return 'http://localhost:5010/api';
+        }
+        if (hostname.endsWith('.mypaywise.cloud')) {
+            // Secure connection when using the custom domain
+            return `https://unic-api.mypaywise.cloud/api`;
+        }
+        // Fallback to the same IP but on port 5010 (external backend port)
+        const protocol = window.location.protocol;
+        return `${protocol}//${hostname}:5010/api`;
     }
-    return 'http://localhost:5000/api';
+    return 'http://localhost:5010/api';
 };
 
 const BASE_URL = getBaseUrl();
