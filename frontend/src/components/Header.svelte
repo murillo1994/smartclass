@@ -1,10 +1,37 @@
 <script>
+    import { onMount } from 'svelte';
     export let logo = "";
     export let adminMode = false;
 
     let menuOpen = false;
+    let isLightMode = false;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5511999999999&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
+
+    onMount(() => {
+        if (typeof window !== 'undefined') {
+            isLightMode = localStorage.getItem('admin_theme') === 'light';
+            applyTheme();
+        }
+    });
+
+    function toggleTheme() {
+        isLightMode = !isLightMode;
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('admin_theme', isLightMode ? 'light' : 'dark');
+            applyTheme();
+        }
+    }
+
+    function applyTheme() {
+        if (typeof window !== 'undefined') {
+            if (isLightMode) {
+                document.documentElement.classList.add('theme-light');
+            } else {
+                document.documentElement.classList.remove('theme-light');
+            }
+        }
+    }
 
     function logout() {
         if (typeof window !== 'undefined') {
@@ -79,6 +106,29 @@
         </nav>
     {:else}
         <nav style="display: flex; align-items: center; gap: 1.5rem;">
+            <!-- Theme Toggle Button -->
+            <button on:click={toggleTheme} style="
+                background: none;
+                border: none;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.25rem;
+                color: #6b5446;
+                transition: color 0.2s;
+            " onmouseenter={e => e.currentTarget.style.color='#483d39'}
+               onmouseleave={e => e.currentTarget.style.color='#6b5446'}
+               title={isLightMode ? "Ativar Modo Escuro" : "Ativar Modo Claro"}>
+                {#if isLightMode}
+                    <!-- Sun Icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                {:else}
+                    <!-- Moon Icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                {/if}
+            </button>
+
             <a href="/" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Website</a>
             <a href="/admin/crm" style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: #483d39; text-decoration: none; border: 1px solid #483d39; padding: 0.4rem 1rem; border-radius: 2px;">Painel CRM</a>
             <button on:click={logout} style="font-size: 0.75rem; color: #9c4c4c; background: none; border: none; font-weight: 600; cursor: pointer; transition: color 0.2s;"
