@@ -20,9 +20,39 @@ const getBaseUrl = () => {
 
 const BASE_URL = getBaseUrl();
 
+const getHeaders = () => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('unic_admin_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    return headers;
+};
+
 export const api = {
+    async login(username, password) {
+        const res = await fetch(`${BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Credenciais inválidas');
+        }
+        const data = await res.json();
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('unic_admin_token', data.token);
+        }
+        return data;
+    },
+
     async getLeads() {
-        const res = await fetch(`${BASE_URL}/leads`);
+        const res = await fetch(`${BASE_URL}/leads`, {
+            headers: getHeaders()
+        });
         if (!res.ok) throw new Error('Falha ao buscar leads');
         return res.json();
     },
@@ -30,7 +60,7 @@ export const api = {
     async updateLead(id, data) {
         const res = await fetch(`${BASE_URL}/leads/${id}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Falha ao atualizar lead');
@@ -38,7 +68,9 @@ export const api = {
     },
     
     async getMessages(leadId) {
-        const res = await fetch(`${BASE_URL}/leads/${leadId}/messages`);
+        const res = await fetch(`${BASE_URL}/leads/${leadId}/messages`, {
+            headers: getHeaders()
+        });
         if (!res.ok) throw new Error('Falha ao obter mensagens');
         return res.json();
     },
@@ -46,7 +78,7 @@ export const api = {
     async sendManualMessage(leadId, content) {
         const res = await fetch(`${BASE_URL}/leads/${leadId}/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify({ content })
         });
         if (!res.ok) throw new Error('Falha ao enviar mensagem manual');
@@ -54,7 +86,9 @@ export const api = {
     },
     
     async getAppointments() {
-        const res = await fetch(`${BASE_URL}/appointments`);
+        const res = await fetch(`${BASE_URL}/appointments`, {
+            headers: getHeaders()
+        });
         if (!res.ok) throw new Error('Falha ao obter agendamentos');
         return res.json();
     },
@@ -62,7 +96,7 @@ export const api = {
     async createAppointment(patientId, procedureId, startTime) {
         const res = await fetch(`${BASE_URL}/appointments`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getHeaders(),
             body: JSON.stringify({
                 patient_id: patientId,
                 procedure_id: procedureId,
@@ -74,7 +108,9 @@ export const api = {
     },
     
     async getProcedures() {
-        const res = await fetch(`${BASE_URL}/procedures`);
+        const res = await fetch(`${BASE_URL}/procedures`, {
+            headers: getHeaders()
+        });
         if (!res.ok) throw new Error('Falha ao obter procedimentos');
         return res.json();
     }

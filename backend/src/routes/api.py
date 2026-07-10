@@ -1,13 +1,47 @@
 from flask import Blueprint, request, jsonify
 from src.database import db, Patient, Message, Procedure, Appointment
 from src.services.evolution_service import EvolutionService
+from src.config import Config
 from datetime import datetime, timedelta
+from functools import wraps
 
 api_bp = Blueprint('api', __name__)
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"error": "Token não fornecido"}), 401
+        
+        parts = auth_header.split()
+        if len(parts) != 2 or parts[0].lower() != 'bearer':
+            return jsonify({"error": "Formato de token inválido"}), 401
+            
+        token = parts[1]
+        if token != "unic_secure_admin_session_token":
+            return jsonify({"error": "Token inválido ou expirado"}), 401
+            
+        return f(*args, **kwargs)
+    return decorated
+
+# --- AUTH ENDPOINTS ---
+
+@api_bp.route('/auth/login', methods=['POST'])
+def login():
+    data = request.get_json() or {}
+    username = data.get('username')
+    password = data.get('password')
+    
+    if username == Config.ADMIN_USERNAME and password == Config.ADMIN_PASSWORD:
+        return jsonify({"success": True, "token": "unic_secure_admin_session_token"}), 200
+        
+    return jsonify({"error": "Usuário ou senha incorretos"}), 401
 
 # --- LEADS ENDPOINTS ---
 
 @api_bp.route('/leads', methods=['GET'])
+@require_auth
 def get_leads():
     """
     Retorna a lista de todos os leads/pacientes cadastrados com suas últimas mensagens.
@@ -33,6 +67,7 @@ def get_leads():
     return jsonify(results), 200
 
 @api_bp.route('/leads/<int:lead_id>', methods=['PATCH'])
+@require_auth
 def update_lead(lead_id):
     """
     Atualiza o nome, a etapa do Kanban ou o status de handoff da IA para um lead.
@@ -57,6 +92,7 @@ def update_lead(lead_id):
 # --- CHAT / MESSAGES ENDPOINTS ---
 
 @api_bp.route('/leads/<int:lead_id>/messages', methods=['GET'])
+@require_auth
 def get_messages(lead_id):
     """
     Retorna o histórico de mensagens de uma conversa.
@@ -69,6 +105,7 @@ def get_messages(lead_id):
     return jsonify([m.to_dict() for m in messages]), 200
 
 @api_bp.route('/leads/<int:lead_id>/messages', methods=['POST'])
+@require_auth
 def send_manual_message(lead_id):
     """
     Envia uma mensagem manual do agente (recepção) para o paciente.
@@ -100,6 +137,7 @@ def send_manual_message(lead_id):
 # --- APPOINTMENTS & PROCEDURES ENDPOINTS ---
 
 @api_bp.route('/appointments', methods=['GET'])
+@require_auth
 def get_appointments():
     """
     Retorna a lista de agendamentos no calendário.
@@ -123,6 +161,7 @@ def get_appointments():
     return jsonify(results), 200
 
 @api_bp.route('/appointments', methods=['POST'])
+@require_auth
 def create_appointment():
     """
     Cria manualmente um agendamento pela recepção.
@@ -180,6 +219,7 @@ def create_appointment():
     return jsonify({"success": True, "appointment": appt.to_dict()}), 201
 
 @api_bp.route('/procedures', methods=['GET'])
+@require_auth
 def get_procedures():
     """
     Retorna o catálogo de procedimentos cadastrados.

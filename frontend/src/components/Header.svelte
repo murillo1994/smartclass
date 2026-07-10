@@ -5,6 +5,13 @@
     let menuOpen = false;
 
     const whatsappUrl = `https://api.whatsapp.com/send?phone=5511999999999&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
+
+    function logout() {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('unic_admin_token');
+            window.location.href = '/admin/login';
+        }
+    }
 </script>
 
 <header style="
@@ -74,6 +81,11 @@
         <nav style="display: flex; align-items: center; gap: 1.5rem;">
             <a href="/" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Website</a>
             <a href="/admin/crm" style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: #483d39; text-decoration: none; border: 1px solid #483d39; padding: 0.4rem 1rem; border-radius: 2px;">Painel CRM</a>
+            <button on:click={logout} style="font-size: 0.75rem; color: #9c4c4c; background: none; border: none; font-weight: 600; cursor: pointer; transition: color 0.2s;"
+                    onmouseenter={e => e.target.style.color='#7f3232'}
+                    onmouseleave={e => e.target.style.color='#9c4c4c'}>
+                Sair
+            </button>
         </nav>
     {/if}
 </header>
