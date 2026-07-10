@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.database import db, Patient, Message, Procedure, Appointment
+from src.database import db, Patient, Message, Procedure, Appointment, Doctor, DoctorAvailability
 from src.services.evolution_service import EvolutionService
 from src.config import Config
 from datetime import datetime, timedelta
@@ -226,3 +226,78 @@ def get_procedures():
     """
     procedures = Procedure.query.order_by(Procedure.name.asc()).all()
     return jsonify([p.to_dict() for p in procedures]), 200
+
+# --- DOCTORS & AVAILABILITY ENDPOINTS ---
+
+@api_bp.route('/doctors', methods=['GET'])
+@require_auth
+def get_doctors():
+    doctors = Doctor.query.order_by(Doctor.name.asc()).all()
+    return jsonify([d.to_dict() for d in doctors]), 200
+
+@api_bp.route('/doctors', methods=['POST'])
+@require_auth
+def create_doctor():
+    data = request.get_json() or {}
+    name = data.get('name')
+    specialty = data.get('specialty')
+    
+    if not name or not specialty:
+        return jsonify({"error": "Nome e Especialidade são obrigatórios."}), 400
+        
+    doc = Doctor(name=name, specialty=specialty)
+    db.session.add(doc)
+    db.session.commit()
+    
+    # Initialize default schedule for this doctor (Monday-Friday 09:00-18:00)
+    for day in range(5): # 0 to 4 (Monday to Friday)
+        avail = DoctorAvailability(doctor_id=doc.id, day_of_week=day, start_time="09:00", end_time="18:00")
+        db.session.add(avail)
+    db.session.commit()
+    
+    return jsonify({"success": True, "doctor": doc.to_dict()}), 201
+
+@api_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
+@require_auth
+def delete_doctor(doctor_id):
+    doc = Doctor.query.get(doctor_id)
+    if not doc:
+        return jsonify({"error": "Médico não encontrado."}), 404
+        
+    db.session.delete(doc)
+    db.session.commit()
+    return jsonify({"success": True}), 200
+
+@api_bp.route('/doctors/<int:doctor_id>/availability', methods=['GET'])
+@require_auth
+def get_doctor_availability(doctor_id):
+    doc = Doctor.query.get(doctor_id)
+    if not doc:
+        return jsonify({"error": "Médico não encontrado."}), 404
+        
+    availabilities = DoctorAvailability.query.filter_by(doctor_id=doctor_id).order_by(DoctorAvailability.day_of_week.asc()).all()
+    return jsonify([a.to_dict() for a in availabilities]), 200
+
+@api_bp.route('/doctors/<int:doctor_id>/availability', methods=['POST'])
+@require_auth
+def update_doctor_availability(doctor_id):
+    doc = Doctor.query.get(doctor_id)
+    if not doc:
+        return jsonify({"error": "Médico não encontrado."}), 404
+        
+    data = request.get_json() or [] # list of availabilities
+    # Delete existing availabilities for this doctor
+    DoctorAvailability.query.filter_by(doctor_id=doctor_id).delete()
+    
+    # Add new ones
+    for item in data:
+        day = item.get('day_of_week')
+        start = item.get('start_time', '09:00')
+        end = item.get('end_time', '18:00')
+        
+        if day is not None:
+            avail = DoctorAvailability(doctor_id=doctor_id, day_of_week=day, start_time=start, end_time=end)
+            db.session.add(avail)
+            
+    db.session.commit()
+    return jsonify({"success": True}), 200

@@ -113,5 +113,50 @@ export const api = {
         });
         if (!res.ok) throw new Error('Falha ao obter procedimentos');
         return res.json();
+    },
+
+    async getDoctors() {
+        const res = await fetch(`${BASE_URL}/doctors`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter médicos');
+        return res.json();
+    },
+
+    async createDoctor(name, specialty) {
+        const res = await fetch(`${BASE_URL}/doctors`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ name, specialty })
+        });
+        if (!res.ok) throw new Error('Falha ao cadastrar médico');
+        return res.json();
+    },
+
+    async deleteDoctor(id) {
+        const res = await fetch(`${BASE_URL}/doctors/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao excluir médico');
+        return res.json();
+    },
+
+    async getDoctorAvailability(id) {
+        const res = await fetch(`${BASE_URL}/doctors/${id}/availability`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter agenda do médico');
+        return res.json();
+    },
+
+    async updateDoctorAvailability(id, availabilities) {
+        const res = await fetch(`${BASE_URL}/doctors/${id}/availability`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(availabilities)
+        });
+        if (!res.ok) throw new Error('Falha ao atualizar agenda do médico');
+        return res.json();
     }
 };

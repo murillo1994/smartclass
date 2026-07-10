@@ -114,6 +114,7 @@
     }
 
     :global(html.theme-light .border-l),
+    :global(html.theme-light .border-r),
     :global(html.theme-light .border-b),
     :global(html.theme-light .border-t) {
         border-color: #e5dfd5 !important;

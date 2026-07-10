@@ -3,14 +3,80 @@ import sys
 from datetime import datetime, timedelta
 
 from src.app import create_app
-from src.database import db, Patient, Message, Procedure, Appointment
+from src.database import db, Patient, Message, Procedure, Appointment, Doctor, DoctorAvailability
 
 def seed_fake_leads():
     app = create_app()
     with app.app_context():
-        print("Semeando 10 usuários de teste (leads falsos) para o Kanban...")
+        print("Recreando tabelas do banco de dados (Drop & Create)...")
+        db.drop_all()
+        db.create_all()
+        print("Tabelas recreadas com sucesso!")
 
-        # Lista de leads de teste com diferentes fases
+        # 1. Semear Procedimentos
+        print("Cadastrando procedimentos estéticos premium da Unic Clinic...")
+        procedures = [
+            Procedure(
+                name="Toxina Botulínica (Botox)",
+                description="Suavização de linhas de expressão e rugas dinâmicas da testa, glabela e olhos (pés de galinha).",
+                duration_minutes=30,
+                price=1200.00
+            ),
+            Procedure(
+                name="Preenchimento Labial",
+                description="Escultura labial com ácido hialurônico para volumização, definição de contorno e hidratação.",
+                duration_minutes=45,
+                price=1500.00
+            ),
+            Procedure(
+                name="Harmonização Facial",
+                description="Conjunto de procedimentos estéticos combinados para melhorar a simetria do rosto e contorno mandibular.",
+                duration_minutes=60,
+                price=3500.00
+            ),
+            Procedure(
+                name="Bioestimulador de Colágeno",
+                description="Aplicação profunda de Sculptra ou Radiesse para reestruturação da pele e tratamento da flacidez.",
+                duration_minutes=45,
+                price=2200.00
+            ),
+            Procedure(
+                name="Peeling Químico Cristal",
+                description="Renovação celular e clareamento de manchas faciais através de ácidos específicos de alta performance.",
+                duration_minutes=30,
+                price=450.00
+            )
+        ]
+        db.session.bulk_save_objects(procedures)
+        db.session.commit()
+        print("5 procedimentos adicionados.")
+
+        # 2. Semear Médicos & Especialistas
+        print("Cadastrando corpo clínico boutique...")
+        doctors = [
+            Doctor(name="Dra. Ana Paula", specialty="Dermatologista Esteta"),
+            Doctor(name="Dr. Lucas Ramos", specialty="Terapeuta Capilar Tricologista"),
+            Doctor(name="Dra. Mariana Rocha", specialty="Fisioterapeuta Dermato-Funcional")
+        ]
+        db.session.add_all(doctors)
+        db.session.commit()
+        print("3 especialistas adicionados.")
+
+        # Cadastrar disponibilidade padrão para os médicos (Segunda a Sexta das 09:00 às 18:00)
+        for doc in doctors:
+            for day in range(5): # 0 = Segunda, 4 = Sexta
+                avail = DoctorAvailability(
+                    doctor_id=doc.id,
+                    day_of_week=day,
+                    start_time="09:00",
+                    end_time="18:00"
+                )
+                db.session.add(avail)
+        db.session.commit()
+        print("Disponibilidades semanais configuradas para os especialistas.")
+
+        # 3. Semear Leads
+        print("Cadastrando 10 leads de teste com diferentes fases e diálogos...")
         fake_data = [
             {
                 "name": "Mariana Silva",
@@ -55,6 +121,7 @@ def seed_fake_leads():
                 ],
                 "appointment": {
                     "procedure_name": "Toxina Botulínica (Botox)",
+                    "doctor_name": "Dra. Ana Paula",
                     "days_offset": 7,
                     "hour": 14,
                     "minute": 0
@@ -122,6 +189,7 @@ def seed_fake_leads():
                 ],
                 "appointment": {
                     "procedure_name": "Toxina Botulínica (Botox)",
+                    "doctor_name": "Dra. Ana Paula",
                     "days_offset": 1,
                     "hour": 10,
                     "minute": 0
@@ -131,12 +199,6 @@ def seed_fake_leads():
 
         # Inserir leads e diálogos
         for item in fake_data:
-            # Excluir caso já exista o telefone cadastrado (para evitar duplicações em seeds consecutivas)
-            existing = Patient.query.filter_by(phone=item["phone"]).first()
-            if existing:
-                db.session.delete(existing)
-                db.session.commit()
-
             patient = Patient(
                 name=item["name"],
                 phone=item["phone"],
@@ -159,12 +221,12 @@ def seed_fake_leads():
             # Criar agendamento se especificado
             if "appointment" in item:
                 proc_name = item["appointment"]["procedure_name"]
-                procedure = Procedure.query.filter(Procedure.name.like(f"%{proc_name}%")).first()
-                if not procedure:
-                    # Fallback to first procedure
-                    procedure = Procedure.query.first()
+                doc_name = item["appointment"]["doctor_name"]
                 
-                if procedure:
+                procedure = Procedure.query.filter(Procedure.name.like(f"%{proc_name}%")).first()
+                doctor = Doctor.query.filter(Doctor.name.like(f"%{doc_name}%")).first()
+                
+                if procedure and doctor:
                     start_date = datetime.now() + timedelta(days=item["appointment"]["days_offset"])
                     start_time = datetime.combine(
                         start_date.date(),
@@ -175,6 +237,7 @@ def seed_fake_leads():
                     appt = Appointment(
                         patient_id=patient.id,
                         procedure_id=procedure.id,
+                        doctor_id=doctor.id,
                         start_time=start_time,
                         end_time=end_time,
                         status='confirmado'
@@ -182,7 +245,7 @@ def seed_fake_leads():
                     db.session.add(appt)
                     db.session.commit()
 
-        print("Semeação concluída com sucesso! 10 leads falsos e respectivos diálogos inseridos.")
+        print("Semeação concluída com sucesso! Banco totalmente recreado e populado.")
 
 if __name__ == '__main__':
     seed_fake_leads()

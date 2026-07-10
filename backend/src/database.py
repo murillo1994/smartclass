@@ -39,6 +39,41 @@ class Patient(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
+class Doctor(db.Model):
+    __tablename__ = 'doctors'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    specialty = db.Column(db.String(255), nullable=False)
+    
+    availabilities = db.relationship('DoctorAvailability', backref='doctor', cascade='all, delete-orphan', lazy=True)
+    appointments = db.relationship('Appointment', backref='doctor', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'specialty': self.specialty
+        }
+
+class DoctorAvailability(db.Model):
+    __tablename__ = 'doctor_availabilities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='CASCADE'), nullable=False)
+    day_of_week = db.Column(db.Integer, nullable=False) # 0 = Segunda, 4 = Sexta
+    start_time = db.Column(db.String(5), nullable=False)
+    end_time = db.Column(db.String(5), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'doctor_id': self.doctor_id,
+            'day_of_week': self.day_of_week,
+            'start_time': self.start_time,
+            'end_time': self.end_time
+        }
+
 class Procedure(db.Model):
     __tablename__ = 'procedures'
     
@@ -63,6 +98,7 @@ class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)
     procedure_id = db.Column(db.Integer, db.ForeignKey('procedures.id', ondelete='RESTRICT'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='CASCADE'), nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(
@@ -77,6 +113,7 @@ class Appointment(db.Model):
             'id': self.id,
             'patient_id': self.patient_id,
             'procedure_id': self.procedure_id,
+            'doctor_id': self.doctor_id,
             'start_time': self.start_time.isoformat() if self.start_time else None,
             'end_time': self.end_time.isoformat() if self.end_time else None,
             'status': self.status,
