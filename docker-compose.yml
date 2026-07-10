@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  unic_db:
+    image: postgres:15-alpine
+    container_name: unic_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-unic_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-unic_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-unic_clinic_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - unic_network
+    restart: always
+
+  unic_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: unic_backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://unic_admin:unic_secure_pass@unic_db:5432/unic_clinic_db}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
+      - EVOLUTION_WEBHOOK_SECRET=${EVOLUTION_WEBHOOK_SECRET}
+      - FLASK_ENV=${FLASK_ENV:-development}
+      - PORT=5000
+    depends_on:
+      - unic_db
+    networks:
+      - unic_network
+    restart: always
+
+  unic_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: unic_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:5000/api}
+    depends_on:
+      - unic_backend
+    networks:
+      - unic_network
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  unic_network:
+    driver: bridge

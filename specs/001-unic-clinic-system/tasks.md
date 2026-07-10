@@ -15,10 +15,10 @@
 
 **Objetivo**: Inicialização do projeto, dependências e estrutura de pastas.
 
-- [ ] T001 Criar a estrutura básica de pastas do backend e frontend conforme o plano de desenvolvimento em `backend/` e `frontend/`
-- [ ] T002 [P] Criar o arquivo `backend/requirements.txt` definindo dependências como Flask, SQLAlchemy, openai e requests
-- [ ] T003 [P] Criar o arquivo `frontend/package.json` contendo as dependências base do SvelteKit e Tailwind CSS
-- [ ] T004 [P] Criar o arquivo de variáveis de ambiente `.env` na raiz com base nas orientações de início rápido do quickstart.md
+- [x] T001 Criar a estrutura básica de pastas do backend e frontend conforme o plano de desenvolvimento em `backend/` e `frontend/`
+- [x] T002 [P] Criar o arquivo `backend/requirements.txt` definindo dependências como Flask, OpenAI e SQLAlchemy
+- [x] T003 [P] Criar o arquivo `frontend/package.json` contendo as dependências base do SvelteKit e Tailwind CSS
+- [x] T004 [P] Criar o arquivo de variáveis de ambiente `.env` na raiz com base nas orientações de início rápido do quickstart.md
 
 ---
 
@@ -28,12 +28,12 @@
 
 **⚠️ CRITICAL**: Nenhuma história de usuário ou caso de uso deve ser iniciado até o término desta fase.
 
-- [ ] T005 Configurar o orquestrador `docker-compose.yml` na raiz do projeto integrando os contêineres `unic_db`, `unic_backend` e `unic_frontend`
-- [ ] T006 [P] Configurar o arquivo de imagem Docker do backend em `backend/Dockerfile`
-- [ ] T007 [P] Configurar o arquivo de imagem Docker do frontend em `frontend/Dockerfile`
-- [ ] T008 Criar os modelos relacionais SQLAlchemy para banco de dados e conexão em `backend/src/database.py` (tabelas: Patient, Message, Procedure, Appointment)
-- [ ] T009 Criar o arquivo de leitura e validação de variáveis de ambiente em `backend/src/config.py`
-- [ ] T010 Configurar a inicialização do Flask e tratamento de erros global em `backend/src/app.py`
+- [x] T005 Configurar o orquestrador `docker-compose.yml` na raiz do projeto integrando os contêineres `unic_db`, `unic_backend` e `unic_frontend`
+- [x] T006 [P] Configurar o arquivo de imagem Docker do backend em `backend/Dockerfile`
+- [x] T007 [P] Configurar o arquivo de imagem Docker do frontend em `frontend/Dockerfile`
+- [x] T008 Criar os modelos relacionais SQLAlchemy para banco de dados e conexão em `backend/src/database.py` (tabelas: Patient, Message, Procedure, Appointment)
+- [x] T009 Criar o arquivo de leitura e validação de variáveis de ambiente em `backend/src/config.py`
+- [x] T010 Configurar a inicialização do Flask e tratamento de erros global em `backend/src/app.py`
 
 **Ponto de Controle**: Estrutura base pronta - a implementação das histórias de usuário pode começar em paralelo.
 
