@@ -163,8 +163,9 @@
             <div class="footer-col">
                 <h4 class="footer-heading">Endereço</h4>
                 <p class="footer-text">
-                    Rua Canadá, 215, Jd. América<br/>
-                    São Paulo - SP | CEP 01436-000
+                    R. Euclides Miragaia, 145, Sl 415<br/>
+                    Centro, São José dos Campos - SP<br/>
+                    CEP 12245-820
                 </p>
             </div>
             <div class="footer-col">
@@ -174,7 +175,7 @@
                     WhatsApp: (11) 99999-9999
                 </p>
                 <div class="footer-links">
-                    <a href="https://www.instagram.com/unicclinic" target="_blank" rel="noopener noreferrer" class="footer-link">Instagram</a>
+                    <a href="https://www.instagram.com/unic_clinic" target="_blank" rel="noopener noreferrer" class="footer-link">@unic_clinic</a>
                     <span style="color: #ddd5c8;">•</span>
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="footer-link">WhatsApp</a>
                 </div>
