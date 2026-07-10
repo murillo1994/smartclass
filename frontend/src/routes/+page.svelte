@@ -314,6 +314,13 @@
         opacity: 0.5;
     }
 
+    @media (max-width: 768px) {
+        .hero-scroll { display: none !important; }
+    }
+    @media (max-height: 820px) {
+        .hero-scroll { display: none !important; }
+    }
+
     .hero-scroll span {
         font-size: 0.6rem;
         letter-spacing: 0.3em;
