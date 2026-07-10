@@ -115,9 +115,10 @@
                 <img src="/logos/logo_part_4.png" alt="Unic Clinic Part 4" class="logo-part part-4" class:animate={purposeVisible} />
             </div>
             <p class="purpose-text">
-                "Um propósito simples e admirável: aprimorar a qualidade de vida,<br class="hide-mobile"/>
-                a saúde da pele e restaurar a autoconfiança de nossos pacientes<br class="hide-mobile"/>
-                com naturalidade e sofisticação."
+                "Muito mais que estética, um compromisso com a sua essência.<br class="hide-mobile"/>
+                Nosso propósito é redefinir o seu bem-estar e a saúde da sua pele,<br class="hide-mobile"/>
+                promovendo autoconfiança através de resultados onde a sofisticação<br class="hide-mobile"/>
+                encontra a mais absoluta naturalidade."
             </p>
             <div class="purpose-line"></div>
         </div>
