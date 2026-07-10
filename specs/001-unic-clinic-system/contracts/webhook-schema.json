@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EvolutionAPIWebhookMessagesUpsert",
+  "type": "object",
+  "properties": {
+    "event": {
+      "type": "string",
+      "enum": ["messages.upsert"]
+    },
+    "instance": {
+      "type": "string",
+      "example": "unic_clinic"
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "object",
+          "properties": {
+            "remoteJid": {
+              "type": "string",
+              "example": "5511999999999@s.whatsapp.net"
+            },
+            "fromMe": {
+              "type": "boolean",
+              "example": false
+            },
+            "id": {
+              "type": "string",
+              "example": "3EB0C34B76D74"
+            }
+          },
+          "required": ["remoteJid", "fromMe", "id"]
+        },
+        "pushName": {
+          "type": "string",
+          "example": "João Silva"
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "conversation": {
+              "type": "string",
+              "example": "Olá, gostaria de agendar uma consulta."
+            },
+            "extendedTextMessage": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "messageType": {
+          "type": "string",
+          "enum": ["conversation", "extendedTextMessage", "audioMessage", "imageMessage"]
+        }
+      },
+      "required": ["key", "message", "messageType"]
+    }
+  },
+  "required": ["event", "instance", "data"]
+}
