@@ -131,9 +131,9 @@
             <a href="/admin/crm" class="text-xs text-luxury-gold uppercase tracking-wider underline">Voltar para o Kanban</a>
         </div>
     {:else}
-        <div class="flex-1 flex overflow-hidden">
+        <div class="main-layout">
             <!-- Left Panel: Chat Transcript -->
-            <div class="flex-1 p-6 flex flex-col h-full overflow-hidden">
+            <div class="chat-panel">
                 <div class="mb-4 flex items-center justify-between">
                     <a href="/admin/crm" class="text-xs text-gray-400 hover:text-luxury-gold flex items-center space-x-2 transition duration-200">
                         <span>←</span>
@@ -151,7 +151,7 @@
             </div>
 
             <!-- Right Panel: Lead details and scheduler -->
-            <div class="w-[380px] border-l border-luxury-border bg-luxury-dark/40 p-6 flex flex-col space-y-6 overflow-y-auto h-full">
+            <div class="detail-panel border-l border-luxury-border bg-luxury-dark/40">
                 <!-- Section 1: Lead Profile info -->
                 <div class="space-y-4 pb-6 border-b border-luxury-border/40">
                     <h2 class="font-serif text-lg text-luxury-accent">Detalhes do Paciente</h2>
@@ -262,3 +262,53 @@
         </div>
     {/if}
 </div>
+
+<style>
+    .main-layout {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .chat-panel {
+        flex: 1;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .detail-panel {
+        width: 380px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        overflow-y: auto;
+        height: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .main-layout {
+            flex-direction: column !important;
+            overflow-y: auto !important;
+            height: auto !important;
+        }
+
+        .chat-panel {
+            height: 60vh !important;
+            padding: 1rem !important;
+            flex: none !important;
+        }
+
+        .detail-panel {
+            width: 100% !important;
+            border-left: none !important;
+            border-top: 1px solid rgba(42, 50, 61, 0.3) !important;
+            height: auto !important;
+            padding: 1rem !important;
+            flex: none !important;
+        }
+    }
+</style>
