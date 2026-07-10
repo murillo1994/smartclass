@@ -94,8 +94,8 @@
 
 **Objetivo**: Melhorias visuais, auditoria e validações de build.
 
-- [ ] T025 Executar o build final do frontend e testar todos os contêineres ativos via Docker Compose
-- [ ] T026 Validar o guia de início rápido e criar o walkthrough.md demonstrativo das funcionalidades desenvolvidas
+- [x] T025 Executar o build final do frontend e testar todos os contêineres ativos via Docker Compose
+- [x] T026 Validar o guia de início rápido e criar o walkthrough.md demonstrativo das funcionalidades desenvolvidas
 
 ---
 
