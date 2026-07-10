@@ -47,11 +47,11 @@
 
 ### Implementação para o Caso de Uso 1
 
-- [ ] T011 [P] [US1] Criar o serviço cliente HTTP de envio de mensagens e interação com a Evolution API em `backend/src/services/evolution_service.py`
-- [ ] T012 [P] [US1] Criar a lógica de conversação base da IA e chamadas à API da OpenAI em `backend/src/services/openai_service.py`
-- [ ] T013 [US1] Implementar ferramentas de Function Calling (`check_available_slots`, `book_appointment`, `get_procedures`) para busca e reserva de agendamentos em `backend/src/services/openai_service.py`
-- [ ] T014 [US1] Criar a rota de webhook `/webhook/evolution` para capturar os eventos `MESSAGES_UPSERT` e integrar ao loop da OpenAI em `backend/src/routes/webhook.py`
-- [ ] T015 [US1] Desenvolver o script de semeação do banco de dados `backend/seed_db.py` para popular a tabela de procedimentos iniciais
+- [x] T011 [P] [US1] Criar o serviço cliente HTTP de envio de mensagens e interação com a Evolution API em `backend/src/services/evolution_service.py`
+- [x] T012 [P] [US1] Criar a lógica de conversação base da IA e chamadas à API da OpenAI em `backend/src/services/openai_service.py`
+- [x] T013 [US1] Implementar ferramentas de Function Calling (`check_available_slots`, `book_appointment`, `get_procedures`) para busca e reserva de agendamentos em `backend/src/services/openai_service.py`
+- [x] T014 [US1] Criar a rota de webhook `/webhook/evolution` para capturar os eventos `MESSAGES_UPSERT` e integrar ao loop da OpenAI em `backend/src/routes/webhook.py`
+- [x] T015 [US1] Desenvolver o script de semeação do banco de dados `backend/seed_db.py` para popular a tabela de procedimentos iniciais
 
 **Ponto de Controle**: O Caso de Uso 1 está totalmente funcional de forma autônoma.
 
