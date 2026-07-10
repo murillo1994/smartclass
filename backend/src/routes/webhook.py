@@ -56,12 +56,12 @@ def evolution_webhook():
                 existing = Message.query.filter_by(
                     patient_id=patient.id, 
                     content=message_content, 
-                    sender='agent'
+                    sender='recepcao'
                 ).order_by(Message.created_at.desc()).first()
                 
                 # Se não houver registro recente ou for antigo, loga
                 if not existing:
-                    agent_msg = Message(patient_id=patient.id, sender='agent', content=message_content)
+                    agent_msg = Message(patient_id=patient.id, sender='recepcao', content=message_content)
                     db.session.add(agent_msg)
                     db.session.commit()
             return jsonify({"status": "logged_outbound"}), 200

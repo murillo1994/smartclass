@@ -104,7 +104,7 @@ def check_available_slots_db(date_str):
     # Buscar agendamentos existentes confirmados para essa data
     appointments = Appointment.query.filter(
         db.func.date(Appointment.start_time) == target_date,
-        Appointment.status == 'confirmed'
+        Appointment.status == 'confirmado'
     ).all()
 
     # Filtrar horários ocupados
@@ -139,7 +139,7 @@ def book_appointment_db(phone, patient_name, procedure_id, start_time_str):
 
     # Validar se o horário está disponível (bloqueio de reserva dupla)
     conflict = Appointment.query.filter(
-        Appointment.status == 'confirmed',
+        Appointment.status == 'confirmado',
         Appointment.start_time < end_time,
         Appointment.end_time > start_time
     ).first()
@@ -165,7 +165,7 @@ def book_appointment_db(phone, patient_name, procedure_id, start_time_str):
         procedure_id=procedure.id,
         start_time=start_time,
         end_time=end_time,
-        status='confirmed'
+        status='confirmado'
     )
     db.session.add(appt)
     db.session.commit()
@@ -189,12 +189,12 @@ class OpenAIService:
         # 1. Obter ou Criar paciente
         patient = Patient.query.filter_by(phone=patient_phone).first()
         if not patient:
-            patient = Patient(phone=patient_phone, kanban_stage='novo_lead')
+            patient = Patient(phone=patient_phone, kanban_stage='lead_novo')
             db.session.add(patient)
             db.session.commit()
 
         # Salvar a mensagem do paciente no banco de dados
-        user_msg = Message(patient_id=patient.id, sender='patient', content=message_text)
+        user_msg = Message(patient_id=patient.id, sender='paciente', content=message_text)
         db.session.add(user_msg)
         db.session.commit()
 
@@ -206,7 +206,7 @@ class OpenAIService:
         # Mock de resposta caso a API key não esteja disponível
         if not client:
             fallback_reply = "Olá! Obrigado por entrar em contato com a Unic Clinic. No momento estou operando em modo offline de demonstração. Em breve um de nossos consultores falará com você."
-            ai_msg = Message(patient_id=patient.id, sender='ai', content=fallback_reply)
+            ai_msg = Message(patient_id=patient.id, sender='bot', content=fallback_reply)
             db.session.add(ai_msg)
             db.session.commit()
             return fallback_reply
@@ -217,9 +217,9 @@ class OpenAIService:
             messages_history = [{"role": "system", "content": SYSTEM_PROMPT}]
 
             for msg in past_messages:
-                role = "assistant" if msg.sender == 'ai' else "user"
-                # Mensagens do atendente humano (agent) agem como contexto de assistente para a IA prosseguir
-                if msg.sender == 'agent':
+                role = "assistant" if msg.sender == 'bot' else "user"
+                # Mensagens do atendente humano (recepcao) agem como contexto de assistente para a IA prosseguir
+                if msg.sender == 'recepcao':
                     role = "assistant"
                 messages_history.append({"role": role, "content": msg.content})
 
@@ -284,11 +284,11 @@ class OpenAIService:
                 final_text = response_message.content
 
             # 3. Salvar resposta da IA no histórico de mensagens
-            ai_msg = Message(patient_id=patient.id, sender='ai', content=final_text)
+            ai_msg = Message(patient_id=patient.id, sender='bot', content=final_text)
             db.session.add(ai_msg)
             
             # Atualiza qualificação se agendado
-            if patient.kanban_stage == 'novo_lead' and "agendado" in final_text.lower():
+            if patient.kanban_stage == 'lead_novo' and "agendado" in final_text.lower():
                 patient.kanban_stage = 'agendado'
 
             db.session.commit()
@@ -297,7 +297,7 @@ class OpenAIService:
         except Exception as e:
             logging.error(f"Erro ao processar mensagem com a OpenAI: {e}")
             fallback_error = "Desculpe, estamos com uma instabilidade técnica. Um atendente humano irá continuar seu atendimento em instantes."
-            ai_msg = Message(patient_id=patient.id, sender='ai', content=fallback_error)
+            ai_msg = Message(patient_id=patient.id, sender='bot', content=fallback_error)
             db.session.add(ai_msg)
             db.session.commit()
             return fallback_error

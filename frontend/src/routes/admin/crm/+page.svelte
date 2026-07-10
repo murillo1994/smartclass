@@ -62,10 +62,12 @@
         {:else}
             <!-- Kanban Columns Container -->
             <div class="flex-1 flex overflow-x-auto gap-4 items-start pb-6">
-                <KanbanColumn title="Novos Contatos" stage="novo_lead" {leads} />
-                <KanbanColumn title="Interessados" stage="qualificado" {leads} />
-                <KanbanColumn title="Consultas Agendadas" stage="agendado" {leads} />
-                <KanbanColumn title="Sem Interesse" stage="sem_interesse" {leads} />
+                <KanbanColumn title="Novos Contatos" stage="lead_novo" {leads} />
+                <KanbanColumn title="Qualificação" stage="qualificacao" {leads} />
+                <KanbanColumn title="Agenda Pendente" stage="agendamento_pendente" {leads} />
+                <KanbanColumn title="Agendados" stage="agendado" {leads} />
+                <KanbanColumn title="Perdidos" stage="perdido" {leads} />
+                <KanbanColumn title="Concluídos" stage="concluido" {leads} />
             </div>
         {/if}
     </main>

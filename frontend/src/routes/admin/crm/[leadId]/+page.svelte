@@ -182,10 +182,12 @@
                                 on:change={updateLeadProfile}
                                 class="w-full bg-luxury-card border border-luxury-border/80 focus:border-luxury-gold rounded px-3 py-2 text-xs text-white outline-none"
                             >
-                                <option value="novo_lead">Novos Contatos</option>
-                                <option value="qualificado">Interessados</option>
-                                <option value="agendado">Consultas Agendadas</option>
-                                <option value="sem_interesse">Sem Interesse</option>
+                                <option value="lead_novo">Novos Contatos</option>
+                                <option value="qualificacao">Qualificação</option>
+                                <option value="agendamento_pendente">Agenda Pendente</option>
+                                <option value="agendado">Agendados</option>
+                                <option value="perdido">Perdidos</option>
+                                <option value="concluido">Concluídos</option>
                             </select>
                         </div>
                     </div>

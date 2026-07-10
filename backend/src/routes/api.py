@@ -84,7 +84,7 @@ def send_manual_message(lead_id):
         return jsonify({"error": "O campo content é obrigatório"}), 400
         
     # Salvar mensagem manual no banco
-    msg = Message(patient_id=patient.id, sender='agent', content=content)
+    msg = Message(patient_id=patient.id, sender='recepcao', content=content)
     db.session.add(msg)
     
     # Pausar a IA (Handoff ativo)
@@ -104,7 +104,7 @@ def get_appointments():
     """
     Retorna a lista de agendamentos no calendário.
     """
-    appointments = Appointment.query.filter_by(status='confirmed').order_by(Appointment.start_time.asc()).all()
+    appointments = Appointment.query.filter_by(status='confirmado').order_by(Appointment.start_time.asc()).all()
     results = []
     
     for appt in appointments:
@@ -153,7 +153,7 @@ def create_appointment():
     
     # Validar se o horário está disponível (bloqueio de reserva dupla)
     conflict = Appointment.query.filter(
-        Appointment.status == 'confirmed',
+        Appointment.status == 'confirmado',
         Appointment.start_time < end_time,
         Appointment.end_time > start_time
     ).first()
@@ -166,7 +166,7 @@ def create_appointment():
         procedure_id=procedure_id,
         start_time=start_time,
         end_time=end_time,
-        status='confirmed'
+        status='confirmado'
     )
     
     # Se agendado com sucesso, altera a etapa do Kanban do paciente
