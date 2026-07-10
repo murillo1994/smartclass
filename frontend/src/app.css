@@ -2,28 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles for premium styling theme */
+/* =============================================
+   UNIC CLINIC — Design System (Clínica Romana Style)
+   Light, clean, warm tones
+   ============================================= */
+
+:root {
+  /* Warm neutral palette */
+  --cream:        #faf8f5;
+  --cream-dark:   #f2ede6;
+  --warm-white:   #ffffff;
+  --beige:        #e8e0d5;
+  --stone:        #c4b9ad;
+  --brown-light:  #9e8877;
+  --brown:        #6b5446;
+  --brown-dark:   #483d39;
+  --terracotta:   #a0765a;
+  --text-primary: #2c2420;
+  --text-secondary: #6b5446;
+  --text-muted:   #9e8877;
+  --border:       #ddd5c8;
+}
+
+/* Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: 'Outfit', 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--cream);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--cream-dark); }
+::-webkit-scrollbar-thumb { background: var(--stone); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
+
+/* Typography */
+h1, h2, h3, h4 {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--text-primary);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fadeInUp  { animation: fadeInUp 0.7s ease forwards; }
+.animate-fadeIn    { animation: fadeIn 0.5s ease forwards; }
+
+/* Admin pages keep dark theme */
+.admin-page {
   background-color: #0a0d10;
   color: #ffffff;
-}
-
-/* Elegant scrollbar styling for lists and Kanban board */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #12161b;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2a323d;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #c5a880;
 }
