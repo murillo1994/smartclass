@@ -13,11 +13,28 @@
         { name: "Flacidez de Pálpebras", img: "/images/pálpebras-flácidas.jpg" },
         { name: "Remoção de Tatuagem", img: "/images/remoção-de-tatuagem.jpg" },
     ];
-    let scrollY = 0;
-    $: purposeOffset = Math.max(-180, Math.min(180, (scrollY - 1300) * -0.22));
-</script>
+    import { onMount } from 'svelte';
 
-<svelte:window bind:scrollY={scrollY} />
+    let purposeVisible = false;
+    let purposeEl;
+
+    onMount(() => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    purposeVisible = true;
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        if (purposeEl) {
+            observer.observe(purposeEl);
+        }
+
+        return () => observer.disconnect();
+    });
+</script>
 
 <svelte:head>
     <title>Unic Clinic — Descubra a leveza de se cuidar</title>
@@ -89,9 +106,9 @@
     </section>
 
     <!-- ===== PURPOSE ===== -->
-    <section class="section section-white text-center purpose-section">
+    <section bind:this={purposeEl} class="section section-white text-center purpose-section">
         <div class="purpose-wrap">
-            <img src="/logos/unic_clinic_icone_cinza.png" alt="Unic Clinic" class="purpose-icon" style="transform: translateX({purposeOffset}px); transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);" />
+            <img src="/logos/unic_clinic_icone_cinza.png" alt="Unic Clinic" class="purpose-icon" class:animate={purposeVisible} />
             <p class="purpose-text">
                 "Um propósito simples e admirável: aprimorar a qualidade de vida,<br class="hide-mobile"/>
                 a saúde da pele e restaurar a autoconfiança de nossos pacientes<br class="hide-mobile"/>
@@ -544,8 +561,15 @@
         width: 110px;
         height: 110px;
         object-fit: contain;
+        opacity: 0;
+        transform: translateX(180px);
+        transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease-out;
+        will-change: transform, opacity;
+    }
+
+    .purpose-icon.animate {
         opacity: 0.8;
-        will-change: transform;
+        transform: translateX(0);
     }
 
     .purpose-text {
