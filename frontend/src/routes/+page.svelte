@@ -150,7 +150,7 @@
                 <p class="section-label">Nossa Equipe</p>
                 <h2 class="section-title">Olhar atencioso<br/>e individualizado</h2>
                 <p class="split-desc">
-                    Nossa equipe clínica acredita que a verdadeira beleza reside na harmonia e na naturalidade. Cada consulta de avaliação é um diagnóstico detalhado que estuda as proporções e necessidades de cada paciente. Sob responsabilidade técnica qualificada, buscamos tratamentos precisos que trazem rejuvenescimento sem descaracterizar sua expressão.
+                    Acreditamos que a mais alta forma de beleza nasce do equilíbrio e da naturalidade. Em nossa clínica, a avaliação transcende uma simples consulta: é um mapeamento meticuloso das suas proporções e necessidades únicas. Guiados por um rigoroso padrão de excelência médica, desenhamos protocolos de rejuvenescimento precisos, capazes de suavizar a ação do tempo enquanto preservam, de forma absoluta, a essência dos seus traços.
                 </p>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-outline">
                     Falar com especialista →
