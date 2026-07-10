@@ -152,13 +152,7 @@
     <footer class="footer">
         <div class="container footer-grid">
             <div class="footer-col">
-                <img src="/logos/unic_clinic_logo_1_marrom.png" alt="Unic Clinic Logo" class="footer-logo" />
-                <p class="footer-text">
-                    Responsável Técnico Médico:<br/>
-                    Dra. Renata Moedim<br/>
-                    CRM-SP: 101.553 | RQE: 113772<br/>
-                    CREMESP 101.553
-                </p>
+                <img src="/logos/unic_clinic_logo_claro_hd.png" alt="Unic Clinic Logo" class="footer-logo" />
             </div>
             <div class="footer-col">
                 <h4 class="footer-heading">Endereço</h4>
@@ -646,10 +640,11 @@
     .footer-col {}
 
     .footer-logo {
-        height: 32px;
+        width: 180px;
+        height: auto;
         object-fit: contain;
         margin-bottom: 1.25rem;
-        filter: brightness(1.8) saturate(0.4);
+        display: block;
     }
 
     .footer-heading {
