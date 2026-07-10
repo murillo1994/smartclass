@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-    <title>Unic Clinic — A precisão que a sua beleza exige</title>
+    <title>Unic Clinic — A arte de evidenciar o melhor em você</title>
 </svelte:head>
 
 <div class="page-wrap">
@@ -52,8 +52,8 @@
         <div class="hero-content">
             <p class="hero-label">Unic Clinic • Estética Médica de Alto Padrão</p>
             <h1 class="hero-title">
-                A precisão que a sua<br/> beleza exige,<br/>
-                <em>a exclusividade que você merece.</em>
+                A arte de evidenciar<br/>
+                <em>o que há de melhor em você.</em>
             </h1>
             <p class="hero-subtitle">
                 Abordagem integral, segura e personalizada para realçar<br class="hide-mobile"/> 
