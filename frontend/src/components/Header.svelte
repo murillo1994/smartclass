@@ -15,7 +15,7 @@
     top: 0;
     z-index: 50;
     padding: 0 2rem;
-    height: 70px;
+    height: 90px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -23,7 +23,7 @@
     <!-- Logo -->
     <a href="/" style="display: flex; align-items: center;">
         {#if logo}
-            <img src={logo} alt="Unic Clinic" style="height: 52px; object-fit: contain;" />
+            <img src={logo} alt="Unic Clinic" style="height: 72px; object-fit: contain;" />
         {:else}
             <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.15em; color: #483d39; text-transform: uppercase;">
                 UNIC CLINIC
