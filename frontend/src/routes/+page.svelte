@@ -134,7 +134,7 @@
                 <p class="section-label">Nosso Espaço</p>
                 <h2 class="section-title">Um espaço projetado<br/>para o seu bem-estar</h2>
                 <p class="split-desc">
-                    Com um time de profissionais altamente experientes, nossa clínica oferece uma abordagem integrada para promover sua saúde, beleza e vitalidade. Da harmonização facial refinada aos mais modernos tratamentos capilares e tecnologias regenerativas, cada detalhe foi pensado para oferecer uma experiência única, acolhedora e personalizada.
+                    Guiados por um corpo clínico de excelência, oferecemos uma abordagem integrativa que une saúde, beleza e vitalidade. Da precisão da harmonização facial às mais avançadas tecnologias capilares e regenerativas, cada protocolo é desenhado para proporcionar uma experiência exclusiva, acolhedora e estritamente sob medida.
                 </p>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-primary">
                     Conheça a clínica →
