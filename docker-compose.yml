@@ -11,7 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - unic_network
+      - login_default
     restart: always
 
   unic_backend:
@@ -20,11 +20,11 @@ services:
       dockerfile: Dockerfile
     container_name: unic_backend
     ports:
-      - "5000:5000"
+      - "5010:5000"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://unic_admin:unic_secure_pass@unic_db:5432/unic_clinic_db}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL:-http://evolution_api:8080}
       - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
       - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME}
       - EVOLUTION_WEBHOOK_SECRET=${EVOLUTION_WEBHOOK_SECRET}
@@ -33,7 +33,7 @@ services:
     depends_on:
       - unic_db
     networks:
-      - unic_network
+      - login_default
     restart: always
 
   unic_frontend:
@@ -44,16 +44,16 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:5000/api}
+      - PUBLIC_API_URL=${PUBLIC_API_URL:-http://localhost:5010/api}
     depends_on:
       - unic_backend
     networks:
-      - unic_network
+      - login_default
     restart: always
 
 volumes:
   pgdata:
 
 networks:
-  unic_network:
-    driver: bridge
+  login_default:
+    external: true
