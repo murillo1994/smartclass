@@ -65,12 +65,12 @@
 
 ### Implementação para o Caso de Uso 2
 
-- [ ] T016 [P] [US2] Criar os endpoints REST em `backend/src/routes/api.py` para recuperar leads (etapas Kanban) e histórico de conversas do paciente
-- [ ] T017 [P] [US2] Criar endpoint de envio de mensagem manual que desativa `ai_enabled` do paciente (Handoff) em `backend/src/routes/api.py`
-- [ ] T018 [US2] Configurar o cliente HTTP para a API do backend Flask em `frontend/src/routes/services/api.js`
-- [ ] T019 [US2] Criar a visualização e rota principal do painel CRM com a visualização Kanban em `frontend/src/routes/admin/crm/+page.svelte`
-- [ ] T020 [US2] Criar a tela de chat interativo do lead com controles de handoff em `frontend/src/routes/admin/crm/[leadId]/+page.svelte`
-- [ ] T021 [US2] Implementar os componentes reativos reutilizáveis `KanbanColumn.svelte`, `LeadCard.svelte` e `ChatWindow.svelte` em `frontend/src/components/`
+- [x] T016 [P] [US2] Criar os endpoints REST em `backend/src/routes/api.py` para recuperar leads (etapas Kanban) e histórico de conversas do paciente
+- [x] T017 [P] [US2] Criar endpoint de envio de mensagem manual que desativa `ai_enabled` do paciente (Handoff) em `backend/src/routes/api.py`
+- [x] T018 [US2] Configurar o cliente HTTP para a API do backend Flask em `frontend/src/routes/services/api.js`
+- [x] T019 [US2] Criar a visualização e rota principal do painel CRM com a visualização Kanban em `frontend/src/routes/admin/crm/+page.svelte`
+- [x] T020 [US2] Criar a tela de chat interativo do lead com controles de handoff em `frontend/src/routes/admin/crm/[leadId]/+page.svelte`
+- [x] T021 [US2] Implementar os componentes reativos reutilizáveis `KanbanColumn.svelte`, `LeadCard.svelte` e `ChatWindow.svelte` em `frontend/src/components/`
 
 **Ponto de Controle**: O CRM de recepção e o Handoff de IA funcionam em conjunto com o WhatsApp.
 
