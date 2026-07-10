@@ -108,7 +108,11 @@
     <!-- ===== PURPOSE ===== -->
     <section bind:this={purposeEl} class="section section-white text-center purpose-section">
         <div class="purpose-wrap">
-            <img src="/logos/unic_clinic_icone_cinza.png" alt="Unic Clinic" class="purpose-icon" class:animate={purposeVisible} />
+            <div class="logo-assemble">
+                <img src="/logos/logo_part_1.webp" alt="Unic Clinic Part 1" class="logo-part part-1" class:animate={purposeVisible} />
+                <img src="/logos/logo_part_2.webp" alt="Unic Clinic Part 2" class="logo-part part-2" class:animate={purposeVisible} />
+                <img src="/logos/logo_part_3.webp" alt="Unic Clinic Part 3" class="logo-part part-3" class:animate={purposeVisible} />
+            </div>
             <p class="purpose-text">
                 "Um propósito simples e admirável: aprimorar a qualidade de vida,<br class="hide-mobile"/>
                 a saúde da pele e restaurar a autoconfiança de nossos pacientes<br class="hide-mobile"/>
@@ -557,18 +561,50 @@
         gap: 1.5rem;
     }
 
-    .purpose-icon {
-        width: 110px;
-        height: 110px;
+    .logo-assemble {
+        width: 140px;
+        height: 140px;
+        position: relative;
+        margin-bottom: 0.5rem;
+    }
+
+    .logo-part {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
         opacity: 0;
-        transform: translateX(180px);
-        transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease-out;
         will-change: transform, opacity;
     }
 
-    .purpose-icon.animate {
-        opacity: 0.8;
+    /* Part 1 (evie0sSH) - slides down from top */
+    .logo-part.part-1 {
+        transform: translateY(-45px);
+        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.4s ease-out;
+    }
+    .logo-part.part-1.animate {
+        opacity: 0.95;
+        transform: translateY(0);
+    }
+
+    /* Part 2 (sDvt4hvX) - slides in from right */
+    .logo-part.part-2 {
+        transform: translateX(45px);
+        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.4s, opacity 1.4s ease-out 0.4s;
+    }
+    .logo-part.part-2.animate {
+        opacity: 0.95;
+        transform: translateX(0);
+    }
+
+    /* Part 3 (x6GkXa7y) - slides in from left */
+    .logo-part.part-3 {
+        transform: translateX(-45px);
+        transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.8s, opacity 1.4s ease-out 0.8s;
+    }
+    .logo-part.part-3.animate {
+        opacity: 0.95;
         transform: translateX(0);
     }
 
