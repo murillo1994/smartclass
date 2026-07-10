@@ -1,11 +1,8 @@
 import os
 import sys
 
-# Add src to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-
-from app import create_app
-from database import db, Procedure
+from src.app import create_app
+from src.database import db, Procedure
 
 def seed_procedures():
     app = create_app()
