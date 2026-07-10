@@ -158,5 +158,37 @@ export const api = {
         });
         if (!res.ok) throw new Error('Falha ao atualizar agenda do médico');
         return res.json();
+    },
+
+    async createProcedure(name, description, duration_minutes, price) {
+        const res = await fetch(`${BASE_URL}/procedures`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ name, description, duration_minutes, price })
+        });
+        if (!res.ok) throw new Error('Falha ao cadastrar procedimento');
+        return res.json();
+    },
+
+    async updateProcedure(id, data) {
+        const res = await fetch(`${BASE_URL}/procedures/${id}`, {
+            method: 'PUT',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Falha ao atualizar procedimento');
+        return res.json();
+    },
+
+    async deleteProcedure(id) {
+        const res = await fetch(`${BASE_URL}/procedures/${id}`, {
+            method: 'DELETE',
+            headers: getHeaders()
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || 'Falha ao excluir procedimento');
+        }
+        return res.json();
     }
 };

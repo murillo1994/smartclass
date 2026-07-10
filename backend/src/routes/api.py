@@ -301,3 +301,76 @@ def update_doctor_availability(doctor_id):
             
     db.session.commit()
     return jsonify({"success": True}), 200
+
+# --- PROCEDURES MANAGEMENT ENDPOINTS ---
+
+@api_bp.route('/procedures', methods=['POST'])
+@require_auth
+def create_procedure():
+    data = request.get_json() or {}
+    name = data.get('name')
+    description = data.get('description')
+    duration_minutes = data.get('duration_minutes')
+    price = data.get('price')
+    
+    if not name or duration_minutes is None or price is None:
+        return jsonify({"error": "Nome, Duração (minutos) e Preço são obrigatórios."}), 400
+        
+    try:
+        duration_minutes = int(duration_minutes)
+        price = float(price)
+    except ValueError:
+        return jsonify({"error": "Duração e Preço devem ser numéricos."}), 400
+        
+    proc = Procedure(name=name, description=description, duration_minutes=duration_minutes, price=price)
+    db.session.add(proc)
+    db.session.commit()
+    
+    return jsonify({"success": True, "procedure": proc.to_dict()}), 201
+
+@api_bp.route('/procedures/<int:procedure_id>', methods=['PUT'])
+@require_auth
+def update_procedure(procedure_id):
+    proc = Procedure.query.get(procedure_id)
+    if not proc:
+        return jsonify({"error": "Procedimento não encontrado."}), 404
+        
+    data = request.get_json() or {}
+    name = data.get('name')
+    description = data.get('description')
+    duration_minutes = data.get('duration_minutes')
+    price = data.get('price')
+    
+    if name:
+        proc.name = name
+    if description is not None:
+        proc.description = description
+    if duration_minutes is not None:
+        try:
+            proc.duration_minutes = int(duration_minutes)
+        except ValueError:
+            return jsonify({"error": "Duração deve ser um número inteiro."}), 400
+    if price is not None:
+        try:
+            proc.price = float(price)
+        except ValueError:
+            return jsonify({"error": "Preço deve ser um número."}), 400
+            
+    db.session.commit()
+    return jsonify({"success": True, "procedure": proc.to_dict()}), 200
+
+@api_bp.route('/procedures/<int:procedure_id>', methods=['DELETE'])
+@require_auth
+def delete_procedure(procedure_id):
+    proc = Procedure.query.get(procedure_id)
+    if not proc:
+        return jsonify({"error": "Procedimento não encontrado."}), 404
+        
+    try:
+        db.session.delete(proc)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Não é possível excluir este procedimento pois existem agendamentos associados a ele."}), 409
+        
+    return jsonify({"success": True}), 200
