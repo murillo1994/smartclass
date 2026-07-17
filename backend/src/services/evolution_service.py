@@ -15,6 +15,35 @@ class EvolutionService:
         return not Config.EVOLUTION_API_KEY or "your_evolution" in Config.EVOLUTION_API_KEY
 
     @staticmethod
+    def create_instance():
+        """
+        Cria a instância na Evolution API.
+        """
+        if EvolutionService.is_mock_enabled():
+            return True
+
+        url = f"{Config.EVOLUTION_API_URL}/instance/create"
+        headers = {
+            "Content-Type": "application/json",
+            "apikey": Config.EVOLUTION_API_KEY
+        }
+        payload = {
+            "instanceName": Config.EVOLUTION_INSTANCE_NAME,
+            "qrcode": True
+        }
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            if response.status_code in [200, 201]:
+                logging.info(f"Instância {Config.EVOLUTION_INSTANCE_NAME} criada com sucesso.")
+                return True
+            else:
+                logging.error(f"Erro ao criar instância {Config.EVOLUTION_INSTANCE_NAME}: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            logging.error(f"Erro de conexão ao criar instância: {e}")
+            return False
+
+    @staticmethod
     def get_connection_state():
         """
         Retorna o estado da conexão da instância.
@@ -32,6 +61,10 @@ class EvolutionService:
         }
         try:
             response = requests.get(url, headers=headers, timeout=5)
+            if response.status_code == 404:
+                logging.info(f"Instância {Config.EVOLUTION_INSTANCE_NAME} não encontrada. Criando...")
+                if EvolutionService.create_instance():
+                    return "close"
             if response.status_code == 200:
                 data = response.json()
                 state = data.get("instance", {}).get("state", "close")
@@ -58,6 +91,10 @@ class EvolutionService:
         }
         try:
             response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 404:
+                logging.info(f"Instância {Config.EVOLUTION_INSTANCE_NAME} não encontrada ao obter QR. Criando...")
+                if EvolutionService.create_instance():
+                    response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 qrcode_data = data.get("qrcode", {})
