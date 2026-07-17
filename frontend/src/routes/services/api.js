@@ -190,5 +190,30 @@ export const api = {
             throw new Error(errData.error || 'Falha ao excluir procedimento');
         }
         return res.json();
+    },
+
+    async getWhatsappStatus() {
+        const res = await fetch(`${BASE_URL}/whatsapp/status`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter status do WhatsApp');
+        return res.json();
+    },
+
+    async getWhatsappConnect() {
+        const res = await fetch(`${BASE_URL}/whatsapp/connect`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter QR Code de conexão');
+        return res.json();
+    },
+
+    async logoutWhatsapp() {
+        const res = await fetch(`${BASE_URL}/whatsapp/logout`, {
+            method: 'POST',
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao desconectar o WhatsApp');
+        return res.json();
     }
 };

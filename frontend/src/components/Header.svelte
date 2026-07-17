@@ -130,6 +130,7 @@
             </button>
 
             <a href="/" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Website</a>
+            <a href="/admin/whatsapp" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">WhatsApp</a>
             <a href="/admin/procedures" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Procedimentos</a>
             <a href="/admin/doctors" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Médicos &amp; Agenda</a>
             <a href="/admin/crm" style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: #483d39; text-decoration: none; border: 1px solid #483d39; padding: 0.4rem 1rem; border-radius: 2px;">Painel CRM</a>

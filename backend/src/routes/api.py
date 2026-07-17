@@ -374,3 +374,39 @@ def delete_procedure(procedure_id):
         return jsonify({"error": "Não é possível excluir este procedimento pois existem agendamentos associados a ele."}), 409
         
     return jsonify({"success": True}), 200
+
+# --- WHATSAPP / EVOLUTION API INTEGRATION ENDPOINTS ---
+
+@api_bp.route('/whatsapp/status', methods=['GET'])
+@require_auth
+def get_whatsapp_status():
+    status = EvolutionService.get_connection_state()
+    return jsonify({
+        "status": status,
+        "instance_name": Config.EVOLUTION_INSTANCE_NAME,
+        "is_mock": EvolutionService.is_mock_enabled()
+    }), 200
+
+@api_bp.route('/whatsapp/connect', methods=['GET'])
+@require_auth
+def get_whatsapp_connect():
+    status = EvolutionService.get_connection_state()
+    if status == "open":
+        return jsonify({"status": "open", "message": "Instância já conectada."}), 200
+        
+    qrcode = EvolutionService.get_qrcode()
+    if not qrcode:
+        return jsonify({"error": "Não foi possível obter o QR Code da Evolution API."}), 500
+        
+    return jsonify({
+        "status": "connecting",
+        "qrcode": qrcode
+    }), 200
+
+@api_bp.route('/whatsapp/logout', methods=['POST'])
+@require_auth
+def post_whatsapp_logout():
+    success = EvolutionService.logout()
+    if not success:
+        return jsonify({"error": "Falha ao desconectar a instância."}), 500
+    return jsonify({"success": True}), 200
