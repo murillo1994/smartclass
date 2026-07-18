@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 from openai import OpenAI
 from src.config import Config
-from src.database import db, Patient, Procedure, Appointment, Message
+from src.database import db, Patient, Procedure, Appointment, Message, SystemSettings
 
 # Initialize OpenAI client only if key is available
 client = None
@@ -209,12 +209,47 @@ class OpenAIService:
         """
         Processa a mensagem do paciente usando GPT com Function Calling e insere histórico.
         """
-        # 1. Obter ou Criar paciente
+        # 1. Obter ou Criar paciente com validação de Whitelist e Configurações Globais
+        settings = SystemSettings.query.first()
+        if not settings:
+            settings = SystemSettings(
+                beta_mode_enabled=True,
+                beta_allowed_numbers="",
+                auto_activate_ai_for_new_leads=False
+            )
+            db.session.add(settings)
+            db.session.commit()
+
+        # Verifica se o número está na whitelist de testes
+        is_allowed = False
+        if settings.beta_allowed_numbers:
+            allowed_list = [num.strip() for num in settings.beta_allowed_numbers.split(",") if num.strip()]
+            clean_phone = "".join(filter(str.isdigit, patient_phone))
+            for allowed in allowed_list:
+                clean_allowed = "".join(filter(str.isdigit, allowed))
+                if clean_allowed and (clean_allowed in clean_phone or clean_phone in clean_allowed):
+                    is_allowed = True
+                    break
+        
+        # Decide se a IA iniciará ativa
+        default_ai_enabled = True
+        
+        # Se estiver em modo beta e não for número de teste, força IA desativada (humano)
+        if settings.beta_mode_enabled and not is_allowed:
+            default_ai_enabled = False
+        # Se a ativação automática estiver desativada para novos leads
+        elif not settings.auto_activate_ai_for_new_leads:
+            default_ai_enabled = False
+
         patient = Patient.query.filter_by(phone=patient_phone).first()
         if not patient:
-            patient = Patient(phone=patient_phone, kanban_stage='lead_novo')
+            patient = Patient(phone=patient_phone, kanban_stage='lead_novo', ai_enabled=default_ai_enabled)
             db.session.add(patient)
             db.session.commit()
+        else:
+            if settings.beta_mode_enabled and not is_allowed:
+                patient.ai_enabled = False
+                db.session.commit()
 
         # Salvar a mensagem do paciente no banco de dados
         user_msg = Message(patient_id=patient.id, sender='paciente', content=message_text)
@@ -223,7 +258,7 @@ class OpenAIService:
 
         # Caso a IA esteja pausada (handoff ativo), ignoramos o processamento automático
         if not patient.ai_enabled:
-            logging.info(f"IA desativada (handoff) para paciente {patient_phone}. Ignorando processamento automático.")
+            logging.info(f"IA pausada (handoff/modo beta ativo) para o telefone {patient_phone}. Ignorando resposta automática.")
             return None
 
         # Mock de resposta caso a API key não esteja disponível

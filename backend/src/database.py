@@ -22,6 +22,8 @@ class Patient(db.Model):
         default='lead_novo'
     )
     ai_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    is_imported = db.Column(db.Boolean, nullable=False, default=False)
+    ignored = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
     
@@ -35,6 +37,8 @@ class Patient(db.Model):
             'phone': self.phone,
             'kanban_stage': self.kanban_stage,
             'ai_enabled': self.ai_enabled,
+            'is_imported': self.is_imported,
+            'ignored': self.ignored,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -145,4 +149,20 @@ class Message(db.Model):
             'content': self.content,
             'media_type': self.media_type,
             'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class SystemSettings(db.Model):
+    __tablename__ = 'system_settings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    beta_mode_enabled = db.Column(db.Boolean, nullable=False, default=True)
+    beta_allowed_numbers = db.Column(db.Text, nullable=False, default='')
+    auto_activate_ai_for_new_leads = db.Column(db.Boolean, nullable=False, default=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'beta_mode_enabled': self.beta_mode_enabled,
+            'beta_allowed_numbers': self.beta_allowed_numbers,
+            'auto_activate_ai_for_new_leads': self.auto_activate_ai_for_new_leads
         }

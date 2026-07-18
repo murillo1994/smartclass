@@ -215,5 +215,51 @@ export const api = {
         });
         if (!res.ok) throw new Error('Falha ao desconectar o WhatsApp');
         return res.json();
+    },
+
+    async getSettings() {
+        const res = await fetch(`${BASE_URL}/settings`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter configurações');
+        return res.json();
+    },
+
+    async updateSettings(data) {
+        const res = await fetch(`${BASE_URL}/settings`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Falha ao atualizar configurações');
+        return res.json();
+    },
+
+    async getWhatsappChats() {
+        const res = await fetch(`${BASE_URL}/whatsapp/chats`, {
+            headers: getHeaders()
+        });
+        if (!res.ok) throw new Error('Falha ao obter conversas do aparelho');
+        return res.json();
+    },
+
+    async importWhatsappChat(phone, name, kanban_stage) {
+        const res = await fetch(`${BASE_URL}/whatsapp/import-chat`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ phone, name, kanban_stage })
+        });
+        if (!res.ok) throw new Error('Falha ao importar conversa');
+        return res.json();
+    },
+
+    async ignoreWhatsappChat(phone) {
+        const res = await fetch(`${BASE_URL}/whatsapp/ignore-chat`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ phone })
+        });
+        if (!res.ok) throw new Error('Falha ao ignorar conversa');
+        return res.json();
     }
 };

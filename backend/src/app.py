@@ -27,6 +27,23 @@ def create_app():
     # Automatically create database tables within application context
     with app.app_context():
         db.create_all()
+        # Check and add missing columns to patients table
+        try:
+            from sqlalchemy import text
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='patients'"))
+            existing_cols = [row[0] for row in result.fetchall()]
+            
+            if 'is_imported' not in existing_cols:
+                db.session.execute(text("ALTER TABLE patients ADD COLUMN is_imported BOOLEAN DEFAULT FALSE NOT NULL"))
+                db.session.commit()
+                logging.info("Added missing column 'is_imported' to 'patients' table.")
+                
+            if 'ignored' not in existing_cols:
+                db.session.execute(text("ALTER TABLE patients ADD COLUMN ignored BOOLEAN DEFAULT FALSE NOT NULL"))
+                db.session.commit()
+                logging.info("Added missing column 'ignored' to 'patients' table.")
+        except Exception as e:
+            logging.error(f"Error checking/migrating patients table columns: {e}")
 
     return app
 

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
-from src.database import db, Patient, Message, Procedure, Appointment, Doctor, DoctorAvailability
+import requests
+from src.database import db, Patient, Message, Procedure, Appointment, Doctor, DoctorAvailability, SystemSettings
 from src.services.evolution_service import EvolutionService
 from src.config import Config
 from datetime import datetime, timedelta
@@ -409,4 +410,158 @@ def post_whatsapp_logout():
     success = EvolutionService.logout()
     if not success:
         return jsonify({"error": "Falha ao desconectar a instância."}), 500
+    return jsonify({"success": True}), 200
+
+# --- SYSTEM SETTINGS ENDPOINTS ---
+
+@api_bp.route('/settings', methods=['GET'])
+@require_auth
+def get_settings():
+    settings = SystemSettings.query.first()
+    if not settings:
+        settings = SystemSettings(
+            beta_mode_enabled=True,
+            beta_allowed_numbers="",
+            auto_activate_ai_for_new_leads=False
+        )
+        db.session.add(settings)
+        db.session.commit()
+    return jsonify(settings.to_dict()), 200
+
+@api_bp.route('/settings', methods=['POST'])
+@require_auth
+def update_settings():
+    settings = SystemSettings.query.first()
+    if not settings:
+        settings = SystemSettings()
+        db.session.add(settings)
+        
+    data = request.get_json() or {}
+    
+    if 'beta_mode_enabled' in data:
+        settings.beta_mode_enabled = bool(data['beta_mode_enabled'])
+    if 'beta_allowed_numbers' in data:
+        settings.beta_allowed_numbers = str(data['beta_allowed_numbers'])
+    if 'auto_activate_ai_for_new_leads' in data:
+        settings.auto_activate_ai_for_new_leads = bool(data['auto_activate_ai_for_new_leads'])
+        
+    db.session.commit()
+    return jsonify({"success": True, "settings": settings.to_dict()}), 200
+
+# --- WHATSAPP CHAT HISTORY IMPORT ENDPOINTS ---
+
+@api_bp.route('/whatsapp/chats', methods=['GET'])
+@require_auth
+def get_whatsapp_chats():
+    if EvolutionService.is_mock_enabled():
+        mock_chats = [
+            {"phone": "5512999999999", "name": "Dr. Murillo (Diretor Unic)", "unread": 2},
+            {"phone": "5512988888888", "name": "Esposa / Família", "unread": 0},
+            {"phone": "5512977777777", "name": "Amanda Cunha (Estética Teste)", "unread": 0},
+            {"phone": "5512966666666", "name": "Fornecedor de Equipamento", "unread": 5}
+        ]
+        
+        parsed = []
+        for chat in mock_chats:
+            patient = Patient.query.filter_by(phone=chat["phone"]).first()
+            parsed.append({
+                "phone": chat["phone"],
+                "name": chat["name"],
+                "unread": chat["unread"],
+                "already_exists": patient is not None and not patient.ignored,
+                "ignored": patient is not None and patient.ignored
+            })
+        return jsonify(parsed), 200
+
+    url = f"{Config.EVOLUTION_API_URL}/chat/findChats/{Config.EVOLUTION_INSTANCE_NAME}"
+    headers = {
+        "apikey": Config.EVOLUTION_API_KEY
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            chats_list = response.json() or []
+            parsed = []
+            for chat in chats_list:
+                jid = chat.get("id", "")
+                if jid.endswith("@g.us"):
+                    continue
+                    
+                phone = jid.split("@")[0]
+                if not phone:
+                    continue
+                    
+                name = chat.get("name") or chat.get("pushName") or "Contato Sem Nome"
+                unread = chat.get("unreadCount", 0)
+                
+                patient = Patient.query.filter_by(phone=phone).first()
+                parsed.append({
+                    "phone": phone,
+                    "name": name,
+                    "unread": unread,
+                    "already_exists": patient is not None and not patient.ignored,
+                    "ignored": patient is not None and patient.ignored
+                })
+            return jsonify(parsed), 200
+        else:
+            return jsonify({"error": "Falha ao obter chats da Evolution API."}), 500
+    except Exception as e:
+        return jsonify({"error": f"Erro de conexão com Evolution API: {str(e)}"}), 500
+
+@api_bp.route('/whatsapp/import-chat', methods=['POST'])
+@require_auth
+def import_whatsapp_chat():
+    data = request.get_json() or {}
+    phone = data.get("phone")
+    name = data.get("name", "Contato Importado")
+    stage = data.get("kanban_stage", "lead_novo")
+    
+    if not phone:
+        return jsonify({"error": "Número do telefone é obrigatório."}), 400
+        
+    patient = Patient.query.filter_by(phone=phone).first()
+    if patient:
+        patient.name = name
+        patient.kanban_stage = stage
+        patient.ignored = False
+        patient.is_imported = True
+        patient.ai_enabled = False
+    else:
+        patient = Patient(
+            phone=phone,
+            name=name,
+            kanban_stage=stage,
+            is_imported=True,
+            ignored=False,
+            ai_enabled=False
+        )
+        db.session.add(patient)
+        
+    db.session.commit()
+    return jsonify({"success": True, "patient": patient.to_dict()}), 200
+
+@api_bp.route('/whatsapp/ignore-chat', methods=['POST'])
+@require_auth
+def ignore_whatsapp_chat():
+    data = request.get_json() or {}
+    phone = data.get("phone")
+    
+    if not phone:
+        return jsonify({"error": "Número de telefone é obrigatório."}), 400
+        
+    patient = Patient.query.filter_by(phone=phone).first()
+    if patient:
+        patient.ignored = True
+        patient.ai_enabled = False
+    else:
+        patient = Patient(
+            phone=phone,
+            name="Ignorado",
+            kanban_stage="perdido",
+            ignored=True,
+            ai_enabled=False
+        )
+        db.session.add(patient)
+        
+    db.session.commit()
     return jsonify({"success": True}), 200
