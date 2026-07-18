@@ -1,9 +1,20 @@
 <script>
     import Header from '../components/Header.svelte';
+    import { api } from './services/api';
+    import { onMount } from 'svelte';
 
-    const whatsappNumber = "5512999999999";
     const whatsappMessage = "Olá! Vim do site da Unic Clinic e gostaria de agendar uma consulta de avaliação.";
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(whatsappMessage)}`;
+    let whatsappUrl = `https://api.whatsapp.com/send?phone=5512999999999&text=${encodeURIComponent(whatsappMessage)}`;
+
+    let addresses = [
+        { label: "Unidade Principal", address: "R. Euclides Miragaia, 145, Sl 415\nCentro, São José dos Campos - SP\nCEP 12245-820" }
+    ];
+    let phones = [
+        { label: "Telefone", phone: "(12) 9999-9999" },
+        { label: "WhatsApp", phone: "(12) 99999-9999" }
+    ];
+    let instagram = "@unic_clinic";
+    let instagramUrl = "https://www.instagram.com/unic_clinic";
 
     const treatments = [
         { name: "Terapia Capilar", img: "/images/queda-de-cabelo.jpg" },
@@ -13,12 +24,63 @@
         { name: "Flacidez de Pálpebras", img: "/images/pálpebras-flácidas.jpg" },
         { name: "Remoção de Tatuagem", img: "/images/remoção-de-tatuagem.jpg" },
     ];
-    import { onMount } from 'svelte';
 
     let purposeVisible = false;
     let purposeEl;
 
-    onMount(() => {
+    onMount(async () => {
+        // 1. Carregar perfil institucional dinâmico da clínica
+        try {
+            const profile = await api.getPublicProfile();
+            if (profile) {
+                // Parse endereços
+                try {
+                    const parsedAddrs = JSON.parse(profile.clinic_addresses);
+                    if (Array.isArray(parsedAddrs) && parsedAddrs.length > 0) {
+                        addresses = parsedAddrs;
+                    } else if (profile.clinic_address) {
+                        addresses = [{ label: "Unidade Principal", address: profile.clinic_address }];
+                    }
+                } catch (e) {}
+
+                // Parse telefones
+                try {
+                    const parsedPhones = JSON.parse(profile.clinic_phones_list);
+                    if (Array.isArray(parsedPhones) && parsedPhones.length > 0) {
+                        phones = parsedPhones;
+                    } else if (profile.clinic_phones) {
+                        phones = [
+                            { label: "Telefone", phone: profile.clinic_phones },
+                            { label: "WhatsApp", phone: profile.clinic_phones }
+                        ];
+                    }
+                } catch (e) {}
+
+                // Instagram
+                if (profile.clinic_instagram) {
+                    const cleanInsta = profile.clinic_instagram.replace("@", "").trim();
+                    instagram = `@${cleanInsta}`;
+                    instagramUrl = `https://www.instagram.com/${cleanInsta}`;
+                }
+
+                // WhatsApp CTA URL recalculation
+                if (phones && phones.length > 0) {
+                    const targetPh = phones.find(p => p.label.toLowerCase().includes('whats') || p.label.toLowerCase().includes('celular')) || phones[0];
+                    const cleanNumber = targetPh.phone.replace(/\D/g, "");
+                    let formattedNum = cleanNumber;
+                    if (cleanNumber.length === 11 || cleanNumber.length === 10) {
+                        formattedNum = `55${cleanNumber}`;
+                    }
+                    if (formattedNum) {
+                        whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedNum}&text=${encodeURIComponent(whatsappMessage)}`;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao carregar dados do perfil da clínica:", err);
+        }
+
+        // 2. Setup intersection observer para animação de logo
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -182,21 +244,27 @@
                 <img src="/logos/unic_clinic_logo_claro_hd.png" alt="Unic Clinic Logo" class="footer-logo" />
             </div>
             <div class="footer-col">
-                <h4 class="footer-heading">Endereço</h4>
-                <p class="footer-text">
-                    R. Euclides Miragaia, 145, Sl 415<br/>
-                    Centro, São José dos Campos - SP<br/>
-                    CEP 12245-820
-                </p>
+                <h4 class="footer-heading">Endereços</h4>
+                {#each addresses as addr}
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #c4b9ad; display: block; margin-bottom: 0.2rem;">
+                            {addr.label}
+                        </span>
+                        <p class="footer-text" style="white-space: pre-line; margin: 0;">
+                            {addr.address}
+                        </p>
+                    </div>
+                {/each}
             </div>
             <div class="footer-col">
                 <h4 class="footer-heading">Contato &amp; Redes</h4>
-                <p class="footer-text">
-                    Telefone: (12) 9999-9999<br/>
-                    WhatsApp: (12) 99999-9999
-                </p>
-                <div class="footer-links">
-                    <a href="https://www.instagram.com/unic_clinic" target="_blank" rel="noopener noreferrer" class="footer-link">@unic_clinic</a>
+                {#each phones as ph}
+                    <p class="footer-text" style="margin-bottom: 0.5rem;">
+                        <span style="color: #c4b9ad; font-weight: 500;">{ph.label}:</span> {ph.phone}
+                    </p>
+                {/each}
+                <div class="footer-links" style="margin-top: 1rem;">
+                    <a href={instagramUrl} target="_blank" rel="noopener noreferrer" class="footer-link">{instagram}</a>
                     <span style="color: #ddd5c8;">•</span>
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="footer-link">WhatsApp</a>
                 </div>

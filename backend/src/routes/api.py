@@ -477,6 +477,34 @@ def update_settings():
     db.session.commit()
     return jsonify({"success": True, "settings": settings.to_dict()}), 200
 
+@api_bp.route('/clinic/profile', methods=['GET'])
+def get_clinic_profile():
+    """
+    Retorna apenas as informações institucionais públicas da clínica.
+    NÃO expõe chaves de segurança ou whitelists.
+    """
+    settings = SystemSettings.query.first()
+    if not settings:
+        settings = SystemSettings(
+            beta_mode_enabled=True,
+            beta_allowed_numbers="",
+            auto_activate_ai_for_new_leads=False
+        )
+        db.session.add(settings)
+        db.session.commit()
+    
+    return jsonify({
+        "clinic_name": settings.clinic_name,
+        "clinic_responsible": settings.clinic_responsible,
+        "clinic_address": settings.clinic_address,
+        "clinic_phones": settings.clinic_phones,
+        "clinic_addresses": settings.clinic_addresses,
+        "clinic_phones_list": settings.clinic_phones_list,
+        "clinic_instagram": settings.clinic_instagram,
+        "clinic_working_hours": settings.clinic_working_hours,
+        "clinic_custom_notes": settings.clinic_custom_notes
+    }), 200
+
 # --- WHATSAPP CHAT HISTORY IMPORT ENDPOINTS ---
 
 @api_bp.route('/whatsapp/chats', methods=['GET'])

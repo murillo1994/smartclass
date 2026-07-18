@@ -261,5 +261,11 @@ export const api = {
         });
         if (!res.ok) throw new Error('Falha ao ignorar conversa');
         return res.json();
+    },
+
+    async getPublicProfile() {
+        const res = await fetch(`${BASE_URL}/clinic/profile`);
+        if (!res.ok) throw new Error('Falha ao obter perfil da clínica');
+        return res.json();
     }
 };

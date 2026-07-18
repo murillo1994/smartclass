@@ -1,17 +1,41 @@
 <script>
     import { onMount } from 'svelte';
+    import { api } from '../routes/services/api';
+    
     export let logo = "";
     export let adminMode = false;
 
     let menuOpen = false;
     let isLightMode = false;
 
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=5511999999999&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
+    let whatsappUrl = `https://api.whatsapp.com/send?phone=5512999999999&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
 
-    onMount(() => {
+    onMount(async () => {
         if (typeof window !== 'undefined') {
             isLightMode = localStorage.getItem('admin_theme') === 'light';
             applyTheme();
+        }
+        
+        if (!adminMode) {
+            try {
+                const profile = await api.getPublicProfile();
+                if (profile && profile.clinic_phones_list) {
+                    const parsedPhones = JSON.parse(profile.clinic_phones_list);
+                    if (Array.isArray(parsedPhones) && parsedPhones.length > 0) {
+                        const targetPh = parsedPhones.find(p => p.label.toLowerCase().includes('whats') || p.label.toLowerCase().includes('celular')) || parsedPhones[0];
+                        const cleanNumber = targetPh.phone.replace(/\D/g, "");
+                        let formattedNum = cleanNumber;
+                        if (cleanNumber.length === 11 || cleanNumber.length === 10) {
+                            formattedNum = `55${cleanNumber}`;
+                        }
+                        if (formattedNum) {
+                            whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedNum}&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao carregar link de Whatsapp no Header", e);
+            }
         }
     });
 
