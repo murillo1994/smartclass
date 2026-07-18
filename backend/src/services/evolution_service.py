@@ -98,9 +98,15 @@ class EvolutionService:
                     response = requests.get(url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                qrcode_data = data.get("qrcode", {})
+                if "base64" in data:
+                    return data.get("base64")
+                
+                qrcode_data = data.get("qrcode")
                 if isinstance(qrcode_data, dict):
                     return qrcode_data.get("base64")
+                elif isinstance(qrcode_data, str):
+                    return qrcode_data
+                    
                 return data.get("base64")
             return None
         except Exception as e:
