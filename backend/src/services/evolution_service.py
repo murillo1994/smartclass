@@ -29,7 +29,8 @@ class EvolutionService:
         }
         payload = {
             "instanceName": Config.EVOLUTION_INSTANCE_NAME,
-            "qrcode": True
+            "qrcode": True,
+            "integration": "WHATSAPP-BAILEYS"
         }
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=10)
