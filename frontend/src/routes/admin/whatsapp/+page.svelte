@@ -164,7 +164,11 @@
     onDestroy(() => {
         if (statusInterval) {
             clearInterval(statusInterval);
-       <svelte:head>
+        }
+    });
+</script>
+
+<svelte:head>
     <title>Unic Clinic — Conexão WhatsApp</title>
 </svelte:head>
 
