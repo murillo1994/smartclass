@@ -19,6 +19,12 @@ def evolution_webhook():
     event = data.get("event")
     instance = data.get("instance")
     
+    # Isolamento estrito de instâncias da Evolution API
+    from src.config import Config
+    if instance and instance != Config.EVOLUTION_INSTANCE_NAME:
+        logging.info(f"Ignorando webhook da instância {instance} (esperado: {Config.EVOLUTION_INSTANCE_NAME})")
+        return jsonify({"status": "ignored_other_instance"}), 200
+    
     # Processa apenas eventos de nova mensagem inserida
     if event == "messages.upsert":
         message_data = data.get("data", {})
