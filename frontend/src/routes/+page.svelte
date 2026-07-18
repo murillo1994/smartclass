@@ -16,6 +16,21 @@
     let instagram = "@unic_clinic";
     let instagramUrl = "https://www.instagram.com/unic_clinic";
 
+    function getTreatmentWhatsappUrl(name) {
+        const message = `Olá! Vim do site da Unic Clinic e gostaria de saber mais sobre o procedimento de ${name}.`;
+        let number = "5512999999999";
+        if (phones && phones.length > 0) {
+            const targetPh = phones.find(p => p.label.toLowerCase().includes('whats') || p.label.toLowerCase().includes('celular')) || phones[0];
+            const cleanNumber = targetPh.phone.replace(/\D/g, "");
+            if (cleanNumber.length === 11 || cleanNumber.length === 10) {
+                number = `55${cleanNumber}`;
+            } else if (cleanNumber) {
+                number = cleanNumber;
+            }
+        }
+        return `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(message)}`;
+    }
+
     const treatments = [
         { name: "Terapia Capilar", img: "/images/queda-de-cabelo.jpg" },
         { name: "Toxina Botulínica", img: "/images/botox-unic.jpg" },
@@ -153,7 +168,7 @@
 
             <div class="treatments-grid">
                 {#each treatments as treat}
-                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="treatment-card">
+                    <a href={getTreatmentWhatsappUrl(treat.name)} target="_blank" rel="noopener noreferrer" class="treatment-card">
                         <div class="treatment-img-wrap">
                             <img src={treat.img} alt={treat.name} class="treatment-img" />
                         </div>
