@@ -532,15 +532,16 @@ def get_whatsapp_chats():
 
     url = f"{Config.EVOLUTION_API_URL}/chat/findChats/{Config.EVOLUTION_INSTANCE_NAME}"
     headers = {
-        "apikey": Config.EVOLUTION_API_KEY
+        "apikey": Config.EVOLUTION_API_KEY,
+        "Content-Type": "application/json"
     }
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.post(url, headers=headers, json={}, timeout=10)
         if response.status_code == 200:
             chats_list = response.json() or []
             parsed = []
             for chat in chats_list:
-                jid = chat.get("id", "")
+                jid = chat.get("remoteJid", chat.get("id", ""))
                 if jid.endswith("@g.us"):
                     continue
                     
@@ -561,7 +562,7 @@ def get_whatsapp_chats():
                 })
             return jsonify(parsed), 200
         else:
-            return jsonify({"error": "Falha ao obter chats da Evolution API."}), 500
+            return jsonify({"error": f"Falha ao obter chats da Evolution API (Status {response.status_code})."}), 500
     except Exception as e:
         return jsonify({"error": f"Erro de conexão com Evolution API: {str(e)}"}), 500
 
