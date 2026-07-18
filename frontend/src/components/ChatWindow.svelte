@@ -58,17 +58,17 @@
     <!-- Messages Scroll Area -->
     <div bind:this={chatContainer} class="flex-1 overflow-y-auto p-6 space-y-4">
         {#each messages as msg (msg.id)}
-            <div class="flex {msg.sender === 'patient' ? 'justify-start' : 'justify-end'}">
+            <div class="flex {msg.sender === 'paciente' || msg.sender === 'patient' ? 'justify-start' : 'justify-end'}">
                 <div class="max-w-[75%] rounded-2xl px-4 py-3 text-xs shadow-md leading-relaxed
-                    {msg.sender === 'patient' 
+                    {msg.sender === 'paciente' || msg.sender === 'patient' 
                         ? 'bg-luxury-card border border-luxury-border/80 text-white rounded-tl-none' 
-                        : msg.sender === 'ai' 
+                        : msg.sender === 'bot' || msg.sender === 'ai' 
                             ? 'bg-luxury-gold/5 border border-luxury-gold/30 text-luxury-accent rounded-tr-none'
                             : 'bg-luxury-gold text-luxury-black font-medium rounded-tr-none'}"
                 >
                     <div class="flex items-center space-x-2 mb-1 text-[9px] opacity-60">
                         <span class="font-bold uppercase tracking-wider">
-                            {msg.sender === 'patient' ? 'Paciente' : msg.sender === 'ai' ? 'IA Concierge' : 'Atendente'}
+                            {msg.sender === 'paciente' || msg.sender === 'patient' ? 'Paciente' : msg.sender === 'bot' || msg.sender === 'ai' ? 'IA Concierge' : 'Atendente'}
                         </span>
                         <span>•</span>
                         <span>
