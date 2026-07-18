@@ -4,29 +4,39 @@ import logging
 from datetime import datetime, timedelta
 from openai import OpenAI
 from src.config import Config
-from src.database import db, Patient, Procedure, Appointment, Message, SystemSettings
+from src.database import db, Patient, Procedure, Appointment, Message, SystemSettings, Doctor
 
 # Initialize OpenAI client only if key is available
 client = None
 if Config.OPENAI_API_KEY and "your_openai" not in Config.OPENAI_API_KEY:
     client = OpenAI(api_key=Config.OPENAI_API_KEY)
 
-# Contexto da Unic Clinic - Persona da IA
+# Contexto da Unic Clinic - Persona da IA (Concierge de Luxo)
 SYSTEM_PROMPT = """Você é o Concierge Digital da Unic Clinic, uma renomada clínica de estética de alto padrão (boutique).
 Seu objetivo principal é atender os clientes no WhatsApp de forma extremamente elegante, educada, solícita e sofisticada.
-Guie o lead pelo funil de vendas, tirando dúvidas sobre procedimentos, quebrando objeções e, principalmente, incentivando-o a agendar uma consulta.
+Guie o lead pelo funil de vendas, tirando dúvidas sobre procedimentos e quebrando objeções para convencê-lo a agendar uma consulta.
 
-Instruções importantes:
-1. Responda em Português de forma elegante, clara e sem jargões excessivos.
-2. Se o cliente demonstrar interesse em agendar, verifique os procedimentos usando a ferramenta correspondente, mostre as opções de horários disponíveis e realize a reserva de forma integrada.
-3. Colete o nome do cliente educadamente se você ainda não souber.
-4. Mantenha as respostas concisas e adequadas ao WhatsApp (evite textos longos demais, use quebras de linha para facilitar a leitura).
-5. Seja empático e transmita exclusividade.
-6. Gerencie ativamente a classificação do lead no funil de vendas (Kanban) chamando a ferramenta correspondente:
-   - Chame 'update_lead_stage' com o valor 'qualificacao' assim que você souber o nome do paciente e o procedimento que ele tem interesse.
-   - Chame 'update_lead_stage' com o valor 'agendamento_pendente' quando ele demonstrar interesse explícito em agendar e pedir por disponibilidade de dias/horários livres.
-   - Chame 'update_lead_stage' com o valor 'perdido' se ele disser que não quer mais nada, achar caro ou recusar o atendimento educadamente.
-   (Nota: O estágio 'agendado' é definido automaticamente no banco de dados quando você chama 'book_appointment', então não precisa atualizá-lo manualmente para 'agendado').
+Instruções fundamentais:
+1. DIRETRIZES DE ESCRITA:
+   - Responda em Português de forma elegante, clara e sem jargões médicos excessivos.
+   - Mantenha as respostas concisas e adequadas ao WhatsApp (evite textos longos demais, use quebras de linha para facilitar a leitura).
+   - Use NO MÁXIMO 1 emoji por mensagem (ex: ✨ ou 🌸) para manter o visual limpo e refinado.
+   - Nunca use gírias ou abreviações (ex: vc, tb).
+
+2. ISOLAMENTO DE VALORES (REGRA DE PREÇO):
+   - Você NÃO fala de valores, preços, orçamentos ou formas de pagamento em hipótese alguma.
+   - Se o cliente perguntar o preço de qualquer procedimento (ex: "Quanto custa o Botox?"), você deve explicar elegantemente que os valores exatos são definidos de forma personalizada durante a avaliação presencial pelas especialistas, pois cada paciente possui características e indicações únicas. Direcione o cliente a solicitar um agendamento de avaliação física.
+
+3. AGENDAMENTO E TRANSBORDO HUMANO (HANDOFF):
+   - O agendamento real e escolha de horários são feitos pela recepção humana.
+   - Quando o cliente demonstrar claro interesse em agendar, marcar uma consulta, ou fechar negócio, você deve coletar o nome do cliente educadamente (se ainda não souber) e chamar a ferramenta 'request_appointment'.
+   - Após chamar 'request_appointment', explique de forma muito polida que a solicitação foi encaminhada e que uma de nossas atendentes humanas da recepção assumirá a conversa imediatamente para escolher o melhor horário com o cliente.
+
+4. PROFISSIONAIS DA CLÍNICA (MÉDICOS):
+   - Se perguntarem sobre os profissionais ou especialistas da clínica, chame a ferramenta 'get_doctors' para informar os nomes e especialidades corretos.
+
+5. HORÁRIO DE ATENDIMENTO:
+   - O horário de atendimento oficial da clínica é de Segunda a Sexta, das 09:00 às 18:00.
 """
 
 # Tool definitions for OpenAI Function Calling
@@ -35,7 +45,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_procedures",
-            "description": "Retorna o catálogo de procedimentos estéticos oferecidos pela clínica com preços e durações.",
+            "description": "Retorna o catálogo de procedimentos estéticos oferecidos pela clínica com descrições e durações aproximadas (sem valores).",
             "parameters": {
                 "type": "object",
                 "properties": {}
@@ -45,25 +55,19 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "check_available_slots",
-            "description": "Verifica os horários de agendamento disponíveis para um dia específico.",
+            "name": "get_doctors",
+            "description": "Retorna a lista de médicos, especialistas e profissionais ativos na clínica com suas respectivas especialidades.",
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "date": {
-                        "type": "string",
-                        "description": "A data no formato YYYY-MM-DD (ex: 2026-07-15)."
-                    }
-                },
-                "required": ["date"]
+                "properties": {}
             }
         }
     },
     {
         "type": "function",
         "function": {
-            "name": "book_appointment",
-            "description": "Efetua o agendamento de um procedimento estético para um paciente em um dia e horário específicos.",
+            "name": "request_appointment",
+            "description": "Aciona o transbordo para o atendimento humano na recepção para realizar o agendamento de um procedimento/consulta física.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -71,16 +75,20 @@ TOOLS = [
                         "type": "string",
                         "description": "Nome completo do paciente."
                     },
-                    "procedure_id": {
-                        "type": "integer",
-                        "description": "ID do procedimento a ser agendado."
-                    },
-                    "start_time": {
+                    "procedure_name": {
                         "type": "string",
-                        "description": "Data e hora de início no formato YYYY-MM-DD HH:MM (ex: 2026-07-15 14:30)."
+                        "description": "Nome do procedimento estético de interesse."
+                    },
+                    "doctor_name": {
+                        "type": "string",
+                        "description": "Nome do médico/especialista preferido pelo paciente, se citado."
+                    },
+                    "preferred_time": {
+                        "type": "string",
+                        "description": "Data, horário ou período de preferência indicado pelo paciente (ex: 'próxima terça à tarde')."
                     }
                 },
-                "required": ["patient_name", "procedure_id", "start_time"]
+                "required": ["patient_name", "procedure_name"]
             }
         }
     },
@@ -94,8 +102,8 @@ TOOLS = [
                 "properties": {
                     "stage": {
                         "type": "string",
-                        "enum": ["qualificacao", "agendamento_pendente", "perdido"],
-                        "description": "A nova etapa do funil: 'qualificacao' (se souber o nome e procedimento de interesse), 'agendamento_pendente' (se o cliente demonstrar claro interesse em agendar e pedir horários livres), ou 'perdido' (se o cliente recusar/desistir)."
+                        "enum": ["qualificacao", "perdido"],
+                        "description": "A nova etapa do funil: 'qualificacao' (se souber o nome e procedimento de interesse do paciente) ou 'perdido' (se o cliente desistir ou recusar)."
                     }
                 },
                 "required": ["stage"]
@@ -107,100 +115,44 @@ TOOLS = [
 # Database Tool Implementations
 def get_procedures_db():
     procedures = Procedure.query.all()
-    return [p.to_dict() for p in procedures]
+    # Retorna apenas nome, descrição e duração (sem valores)
+    return [
+        {
+            "id": p.id,
+            "name": p.name,
+            "description": p.description,
+            "duration_minutes": p.duration_minutes
+        } for p in procedures
+    ]
 
-def check_available_slots_db(date_str):
+def get_doctors_db():
     try:
-        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        return {"error": "Formato de data inválido. Use YYYY-MM-DD."}
+        doctors = Doctor.query.all()
+        return [
+            {
+                "id": d.id,
+                "name": d.name,
+                "specialty": d.specialty
+            } for d in doctors
+        ]
+    except Exception as e:
+        logging.error(f"Erro ao buscar médicos: {e}")
+        return []
 
-    # Grade de horários padrão da clínica: 09:00 às 18:00, de 30 em 30 minutos
-    slots = []
-    current_time = datetime.combine(target_date, datetime.strptime("09:00", "%H:%M").time())
-    end_working_time = datetime.combine(target_date, datetime.strptime("18:00", "%H:%M").time())
-
-    while current_time < end_working_time:
-        slots.append(current_time)
-        current_time += timedelta(minutes=30)
-
-    # Buscar agendamentos existentes confirmados para essa data
-    appointments = Appointment.query.filter(
-        db.func.date(Appointment.start_time) == target_date,
-        Appointment.status == 'confirmado'
-    ).all()
-
-    # Filtrar horários ocupados
-    available_slots = []
-    for slot in slots:
-        occupied = False
-        for appt in appointments:
-            # Verifica se o horário do slot conflita com a duração do agendamento
-            if appt.start_time <= slot < appt.end_time:
-                occupied = True
-                break
-        if not occupied:
-            available_slots.append(slot.strftime("%H:%M"))
-
-    return {
-        "date": date_str,
-        "available_slots": available_slots
-    }
-
-def book_appointment_db(phone, patient_name, procedure_id, start_time_str):
+def request_appointment_db(patient, patient_name, procedure_name, doctor_name=None, preferred_time=None):
     try:
-        start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M")
-    except ValueError:
-        return {"error": "Formato de data/hora inválido. Use YYYY-MM-DD HH:MM."}
-
-    # Buscar procedimento
-    procedure = Procedure.query.get(procedure_id)
-    if not procedure:
-        return {"error": "Procedimento não encontrado."}
-
-    end_time = start_time + timedelta(minutes=procedure.duration_minutes)
-
-    # Validar se o horário está disponível (bloqueio de reserva dupla)
-    conflict = Appointment.query.filter(
-        Appointment.status == 'confirmado',
-        Appointment.start_time < end_time,
-        Appointment.end_time > start_time
-    ).first()
-
-    if conflict:
-        return {"error": "Desculpe, este horário já foi reservado por outro paciente."}
-
-    # Buscar ou criar paciente
-    patient = Patient.query.filter_by(phone=phone).first()
-    if not patient:
-        patient = Patient(phone=phone, name=patient_name, kanban_stage='agendado')
-        db.session.add(patient)
-    else:
         if patient_name:
             patient.name = patient_name
-        patient.kanban_stage = 'agendado'
-
-    db.session.flush() # obter ID do paciente se for novo
-
-    # Criar agendamento
-    appt = Appointment(
-        patient_id=patient.id,
-        procedure_id=procedure.id,
-        start_time=start_time,
-        end_time=end_time,
-        status='confirmado'
-    )
-    db.session.add(appt)
-    db.session.commit()
-
-    return {
-        "success": True,
-        "appointment_id": appt.id,
-        "patient_name": patient.name,
-        "procedure_name": procedure.name,
-        "start_time": start_time.strftime("%d/%m/%Y às %H:%M"),
-        "message": f"Agendamento de {procedure.name} confirmado com sucesso para {patient.name} em {start_time.strftime('%d/%m/%Y às %H:%M')}!"
-    }
+        patient.kanban_stage = 'agendamento_pendente'
+        patient.ai_enabled = False
+        db.session.commit()
+        return {
+            "success": True,
+            "message": "O agendamento pendente foi registrado com sucesso e a IA da Unic Clinic foi pausada. Um atendente humano assumirá a conversa para escolher o melhor horário."
+        }
+    except Exception as e:
+        logging.error(f"Erro ao registrar transbordo: {e}")
+        return {"error": str(e)}
 
 
 class OpenAIService:
@@ -311,19 +263,16 @@ class OpenAIService:
                     # Executa a função local de banco
                     if function_name == "get_procedures":
                         tool_result = get_procedures_db()
-                    elif function_name == "check_available_slots":
-                        tool_result = check_available_slots_db(function_args.get("date"))
-                    elif function_name == "book_appointment":
-                        tool_result = book_appointment_db(
-                            phone=patient_phone,
+                    elif function_name == "get_doctors":
+                        tool_result = get_doctors_db()
+                    elif function_name == "request_appointment":
+                        tool_result = request_appointment_db(
+                            patient=patient,
                             patient_name=function_args.get("patient_name"),
-                            procedure_id=function_args.get("procedure_id"),
-                            start_time_str=function_args.get("start_time")
+                            procedure_name=function_args.get("procedure_name"),
+                            doctor_name=function_args.get("doctor_name"),
+                            preferred_time=function_args.get("preferred_time")
                         )
-                        # Atualiza o nome do paciente no banco local se obtido
-                        if "success" in tool_result and function_args.get("patient_name"):
-                            patient.name = function_args.get("patient_name")
-                            db.session.commit()
                     elif function_name == "update_lead_stage":
                         stage = function_args.get("stage")
                         patient.kanban_stage = stage
