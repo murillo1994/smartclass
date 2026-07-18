@@ -247,8 +247,11 @@ class OpenAIService:
             db.session.add(patient)
             db.session.commit()
         else:
-            if settings.beta_mode_enabled and not is_allowed:
-                patient.ai_enabled = False
+            if settings.beta_mode_enabled:
+                if is_allowed:
+                    patient.ai_enabled = True
+                else:
+                    patient.ai_enabled = False
                 db.session.commit()
 
         # Salvar a mensagem do paciente no banco de dados
