@@ -18,6 +18,9 @@
         auto_activate_ai_for_new_leads: false
     };
 
+    // Tabs control
+    let activeTab = "profile"; // "profile" | "ai"
+
     // Reactively managed arrays for the form UI
     let addresses = [{ label: "Unidade Principal", address: "" }];
     let phones = [{ label: "Contato Principal", phone: "" }];
@@ -147,19 +150,39 @@
 
     {#if loading}
         <div class="flex-1 flex items-center justify-center">
-            <span class="text-xs uppercase tracking-widest text-gray-500 animate-pulse">Carregando dados da clínica...</span>
+            <span class="text-xs uppercase tracking-widest text-gray-500 animate-pulse">Carregando painel de controle...</span>
         </div>
     {:else}
         <div class="max-w-4xl mx-auto w-full p-6 md:p-12 space-y-8">
             <!-- Header Section -->
-            <div class="flex items-center justify-between border-b border-luxury-border/30 pb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-luxury-border/30 pb-6 gap-4">
                 <div>
-                    <h1 class="font-serif text-2xl text-luxury-accent">Dados da Clínica</h1>
-                    <p class="text-xs text-gray-400 mt-1">Gerencie múltiplos endereços, contatos e parametrizações do Concierge de IA</p>
+                    <h1 class="font-serif text-2xl text-luxury-accent">Configurações Gerais</h1>
+                    <p class="text-xs text-gray-400 mt-1">Gerencie a identidade e o comportamento do assistente virtual da clínica</p>
+                </div>
+                
+                <!-- Tab Switching Navigation -->
+                <div class="flex bg-luxury-card/30 border border-luxury-border/50 rounded-xl p-1 self-start">
+                    <button 
+                        type="button" 
+                        on:click={() => activeTab = "profile"} 
+                        class="px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition duration-200 
+                            {activeTab === 'profile' ? 'bg-luxury-gold text-luxury-black' : 'text-gray-400 hover:text-white'}"
+                    >
+                        🏢 Perfil da Clínica
+                    </button>
+                    <button 
+                        type="button" 
+                        on:click={() => activeTab = "ai"} 
+                        class="px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg transition duration-200 
+                            {activeTab === 'ai' ? 'bg-luxury-gold text-luxury-black' : 'text-gray-400 hover:text-white'}"
+                    >
+                        🤖 Treinamento da IA
+                    </button>
                 </div>
             </div>
 
-            <!-- Form -->
+            <!-- Main Form -->
             <form on:submit={handleSave} class="space-y-6">
                 {#if successMsg}
                     <div class="bg-luxury-gold/10 border border-luxury-gold/40 text-luxury-accent p-4 rounded-xl text-xs flex items-center space-x-2 animate-fade-in">
@@ -175,12 +198,11 @@
                     </div>
                 {/if}
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <!-- Left Column: Branches details -->
-                    <div class="space-y-6">
+                <!-- TAB 1: PROFILE TAB -->
+                {#if activeTab === 'profile'}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                         
-                        <!-- General Info -->
+                        <!-- General Info Box -->
                         <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
                             <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Informações Gerais</h2>
                             
@@ -228,7 +250,7 @@
                         </div>
 
                         <!-- Structured Addresses List -->
-                        <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
+                        <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl flex flex-col h-full">
                             <div class="flex items-center justify-between border-b border-luxury-border/20 pb-2">
                                 <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest">Endereços / Unidades</h2>
                                 <button 
@@ -240,7 +262,7 @@
                                 </button>
                             </div>
 
-                            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                            <div class="space-y-3 overflow-y-auto max-h-[340px] pr-1 flex-1">
                                 {#each addresses as addr, index}
                                     <div class="p-3 bg-luxury-black/40 border border-luxury-border/40 rounded-xl space-y-2 relative">
                                         <button 
@@ -265,7 +287,7 @@
                                             <input 
                                                 type="text" 
                                                 bind:value={addr.address} 
-                                                placeholder="Endereço completo (Ex: Av. Paulista, 1000 - Cj 52)" 
+                                                placeholder="Endereço completo" 
                                                 required
                                                 class="w-full bg-luxury-black border border-luxury-border/50 focus:border-luxury-gold rounded-lg px-3 py-1.5 text-[11px] text-white outline-none"
                                             />
@@ -275,13 +297,8 @@
                             </div>
                         </div>
 
-                    </div>
-
-                    <!-- Right Column: Phones & AI parameters -->
-                    <div class="space-y-6">
-
                         <!-- Structured Phones List -->
-                        <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
+                        <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl md:col-span-2">
                             <div class="flex items-center justify-between border-b border-luxury-border/20 pb-2">
                                 <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest">Telefones para Contato</h2>
                                 <button 
@@ -293,7 +310,7 @@
                                 </button>
                             </div>
 
-                            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {#each phones as ph, index}
                                     <div class="p-3 bg-luxury-black/40 border border-luxury-border/40 rounded-xl space-y-2 relative">
                                         <button 
@@ -328,69 +345,98 @@
                             </div>
                         </div>
 
-                        <!-- AI Instructions -->
-                        <div class="space-y-4 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
-                            <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Instruções para o Robô</h2>
+                    </div>
+                {/if}
+
+                <!-- TAB 2: AI TRAINING TAB -->
+                {#if activeTab === 'ai'}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                        
+                        <!-- AI Guidelines Box -->
+                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
+                            <div>
+                                <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Instruções Customizadas</h2>
+                                <p class="text-[10px] text-gray-400 mt-1">Oriente as respostas do robô ensinando regras e políticas internas da clínica.</p>
+                            </div>
                             
                             <div class="space-y-1">
-                                <label class="text-[10px] uppercase text-gray-400 block font-semibold">Observações Customizadas da Clínica</label>
                                 <textarea 
                                     bind:value={settings.clinic_custom_notes} 
-                                    placeholder="Ex: Dispomos de manobrista no local. Recomendamos suspender anticoagulantes antes do microagulhamento..."
-                                    rows="4"
-                                    class="w-full bg-luxury-black border border-luxury-border/60 focus:border-luxury-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition resize-none"
+                                    placeholder="Ex: Dispomos de manobrista no local. Não use maquiagem pesada no dia de procedimentos faciais..."
+                                    rows="10"
+                                    class="w-full bg-luxury-black border border-luxury-border/60 focus:border-luxury-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition resize-none leading-relaxed"
                                 ></textarea>
-                                <span class="text-[9px] text-gray-500 block">Essas anotações complementam a base de conhecimento do robô em tempo real.</span>
+                            </div>
+
+                            <!-- Helpful tips for the user -->
+                            <div class="bg-luxury-gold/5 border border-luxury-gold/25 p-4 rounded-xl space-y-2">
+                                <span class="text-[10px] font-bold text-luxury-gold uppercase tracking-wider block">💡 Dicas de Treinamento:</span>
+                                <ul class="text-[10px] text-gray-300 space-y-1 list-disc pl-4 leading-relaxed">
+                                    <li>Mencione regras de **Estacionamento** (ex: *Estacionamento no subsolo, R$ 15 período*).</li>
+                                    <li>Adicione regras de **Cancelamento** (ex: *Pedimos aviso prévio de 24h para remarcações*).</li>
+                                    <li>Explique a **Preparação de procedimentos** (ex: *Suspender ácidos 3 dias antes do Botox*).</li>
+                                    <li>Insira facilidades como **Acessibilidade** (ex: *Temos rampa e elevador de acesso*).</li>
+                                </ul>
                             </div>
                         </div>
 
-                        <!-- Sandbox / Security parameters -->
-                        <div class="bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl space-y-4">
-                            <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Segurança do Robô (Sandbox & IA)</h2>
-
-                            <div class="flex items-center justify-between">
+                        <!-- Whitelist & Sandbox Box -->
+                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl flex flex-col justify-between">
+                            <div class="space-y-6">
                                 <div>
-                                    <span class="text-[11px] font-semibold block">Modo Beta Restrito (Whitelist)</span>
-                                    <span class="text-[9px] text-gray-400">A IA responderá apenas para os números autorizados.</span>
+                                    <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Segurança (Sandbox & Modos)</h2>
+                                    <p class="text-[10px] text-gray-400 mt-1">Proteja e limite o funcionamento da inteligência artificial durante testes ou homologações.</p>
                                 </div>
-                                <input 
-                                    type="checkbox" 
-                                    bind:checked={settings.beta_mode_enabled} 
-                                    class="w-4 h-4 accent-luxury-gold"
-                                />
+
+                                <div class="flex items-center justify-between bg-luxury-black/35 p-3 rounded-xl border border-luxury-border/20">
+                                    <div>
+                                        <span class="text-[11px] font-semibold block">Modo Beta Restrito (Whitelist)</span>
+                                        <span class="text-[9px] text-gray-400">O robô responderá apenas para os números autorizados na lista.</span>
+                                    </div>
+                                    <input 
+                                        type="checkbox" 
+                                        bind:checked={settings.beta_mode_enabled} 
+                                        class="w-4 h-4 accent-luxury-gold"
+                                    />
+                                </div>
+
+                                <div class="flex items-center justify-between bg-luxury-black/35 p-3 rounded-xl border border-luxury-border/20">
+                                    <div>
+                                        <span class="text-[11px] font-semibold block">Auto-ativar IA para Novos Leads</span>
+                                        <span class="text-[9px] text-gray-400">Contatos inéditos do WhatsApp iniciam com robô ativo.</span>
+                                    </div>
+                                    <input 
+                                        type="checkbox" 
+                                        bind:checked={settings.auto_activate_ai_for_new_leads} 
+                                        class="w-4 h-4 accent-luxury-gold"
+                                    />
+                                </div>
+
+                                {#if settings.beta_mode_enabled}
+                                    <div class="space-y-2 pt-2 border-t border-luxury-border/10 animate-fade-in">
+                                        <label class="text-[10px] uppercase text-gray-400 block font-semibold">Números de Telefone Autorizados para Testes</label>
+                                        <textarea 
+                                            bind:value={settings.beta_allowed_numbers} 
+                                            placeholder="Ex: 5511999999999, 5511988888888 (com DDI e DDD)"
+                                            rows="4"
+                                            class="w-full bg-luxury-black border border-luxury-border/60 focus:border-luxury-gold rounded-xl px-4 py-2 text-xs text-white outline-none transition resize-none"
+                                        ></textarea>
+                                        <span class="text-[9px] text-gray-500 block leading-tight">Insira os números com o código de área do país (55 para Brasil) e DDD, separados por vírgula.</span>
+                                    </div>
+                                {/if}
                             </div>
 
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <span class="text-[11px] font-semibold block">Auto-ativar IA para Novos Leads</span>
-                                    <span class="text-[9px] text-gray-400">Novos contatos começam com robô ativo automaticamente.</span>
-                                </div>
-                                <input 
-                                    type="checkbox" 
-                                    bind:checked={settings.auto_activate_ai_for_new_leads} 
-                                    class="w-4 h-4 accent-luxury-gold"
-                                />
+                            <div class="p-4 bg-luxury-black/60 border border-luxury-border/40 rounded-xl space-y-1 text-center">
+                                <span class="text-[11px] font-semibold text-luxury-gold block">🔒 Modo Homologação Ativo</span>
+                                <p class="text-[9px] text-gray-400 leading-normal">O robô concierge da Unic Clinic é blindado e nunca responderá grupos, canais ou status no WhatsApp.</p>
                             </div>
-
-                            {#if settings.beta_mode_enabled}
-                                <div class="space-y-1 pt-2 border-t border-luxury-border/10">
-                                    <label class="text-[10px] uppercase text-gray-400 block font-semibold">Números de Telefone Autorizados</label>
-                                    <textarea 
-                                        bind:value={settings.beta_allowed_numbers} 
-                                        placeholder="Ex: 5511999999999, 5511988888888"
-                                        rows="2"
-                                        class="w-full bg-luxury-black border border-luxury-border/60 focus:border-luxury-gold rounded-xl px-4 py-2 text-xs text-white outline-none transition resize-none"
-                                    ></textarea>
-                                </div>
-                            {/if}
                         </div>
 
                     </div>
+                {/if}
 
-                </div>
-
-                <!-- Save button -->
-                <div class="flex justify-end pt-4">
+                <!-- Save changes -->
+                <div class="flex justify-end pt-4 border-t border-luxury-border/30">
                     <button 
                         type="submit" 
                         disabled={saving}
