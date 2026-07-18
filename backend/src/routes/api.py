@@ -445,6 +445,22 @@ def update_settings():
     if 'auto_activate_ai_for_new_leads' in data:
         settings.auto_activate_ai_for_new_leads = bool(data['auto_activate_ai_for_new_leads'])
         
+    # Read clinic institutional profile fields
+    if 'clinic_name' in data:
+        settings.clinic_name = str(data['clinic_name'])
+    if 'clinic_address' in data:
+        settings.clinic_address = str(data['clinic_address'])
+    if 'clinic_phones' in data:
+        settings.clinic_phones = str(data['clinic_phones'])
+    if 'clinic_instagram' in data:
+        settings.clinic_instagram = str(data['clinic_instagram'])
+    if 'clinic_responsible' in data:
+        settings.clinic_responsible = str(data['clinic_responsible'])
+    if 'clinic_working_hours' in data:
+        settings.clinic_working_hours = str(data['clinic_working_hours'])
+    if 'clinic_custom_notes' in data:
+        settings.clinic_custom_notes = str(data['clinic_custom_notes'])
+        
     db.session.commit()
     return jsonify({"success": True, "settings": settings.to_dict()}), 200
 

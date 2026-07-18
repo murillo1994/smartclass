@@ -158,11 +158,27 @@ class SystemSettings(db.Model):
     beta_mode_enabled = db.Column(db.Boolean, nullable=False, default=True)
     beta_allowed_numbers = db.Column(db.Text, nullable=False, default='')
     auto_activate_ai_for_new_leads = db.Column(db.Boolean, nullable=False, default=False)
+    
+    # Clinic Institutional Profile Fields
+    clinic_name = db.Column(db.String(255), nullable=True, default='Unic Clinic')
+    clinic_address = db.Column(db.Text, nullable=True, default='')
+    clinic_phones = db.Column(db.String(255), nullable=True, default='')
+    clinic_instagram = db.Column(db.String(255), nullable=True, default='')
+    clinic_responsible = db.Column(db.String(255), nullable=True, default='')
+    clinic_working_hours = db.Column(db.String(255), nullable=True, default='Segunda a Sexta, das 09:00 às 18:00')
+    clinic_custom_notes = db.Column(db.Text, nullable=True, default='')
 
     def to_dict(self):
         return {
             'id': self.id,
             'beta_mode_enabled': self.beta_mode_enabled,
             'beta_allowed_numbers': self.beta_allowed_numbers,
-            'auto_activate_ai_for_new_leads': self.auto_activate_ai_for_new_leads
+            'auto_activate_ai_for_new_leads': self.auto_activate_ai_for_new_leads,
+            'clinic_name': self.clinic_name,
+            'clinic_address': self.clinic_address,
+            'clinic_phones': self.clinic_phones,
+            'clinic_instagram': self.clinic_instagram,
+            'clinic_responsible': self.clinic_responsible,
+            'clinic_working_hours': self.clinic_working_hours,
+            'clinic_custom_notes': self.clinic_custom_notes
         }

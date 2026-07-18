@@ -225,9 +225,25 @@ class OpenAIService:
             return fallback_reply
 
         try:
+            # Buscar dados institucionais dinâmicos da clínica
+            settings = SystemSettings.query.first()
+            clinic_info = ""
+            if settings:
+                clinic_info = f"\n\n--- DADOS OFICIAIS DA CLÍNICA (USE PARA INFORMAR O PACIENTE) ---\n" \
+                              f"Nome: {settings.clinic_name or 'Unic Clinic'}\n" \
+                              f"Responsável Técnico/Gestor: {settings.clinic_responsible or 'Não cadastrado'}\n" \
+                              f"Endereço: {settings.clinic_address or 'Não cadastrado'}\n" \
+                              f"Telefones de Contato: {settings.clinic_phones or 'Não cadastrado'}\n" \
+                              f"Instagram: {settings.clinic_instagram or 'Não cadastrado'}\n" \
+                              f"Horário de Funcionamento: {settings.clinic_working_hours or 'Segunda a Sexta, das 09:00 às 18:00'}\n" \
+                              f"Observações/Regras Customizadas: {settings.clinic_custom_notes or 'Nenhuma'}\n" \
+                              f"-----------------------------------------------------------------\n"
+            
+            dynamic_prompt = SYSTEM_PROMPT + clinic_info
+
             # 2. Resgatar as últimas 15 mensagens para histórico de contexto
             past_messages = Message.query.filter_by(patient_id=patient.id).order_by(Message.created_at.asc()).limit(15).all()
-            messages_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+            messages_history = [{"role": "system", "content": dynamic_prompt}]
 
             for msg in past_messages:
                 role = "assistant" if msg.sender == 'bot' else "user"

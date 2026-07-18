@@ -45,6 +45,30 @@ def create_app():
         except Exception as e:
             logging.error(f"Error checking/migrating patients table columns: {e}")
 
+        # Check and add missing columns to system_settings table
+        try:
+            from sqlalchemy import text
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='system_settings'"))
+            existing_settings_cols = [row[0] for row in result.fetchall()]
+            
+            new_settings_cols = {
+                'clinic_name': "VARCHAR(255) DEFAULT 'Unic Clinic'",
+                'clinic_address': "TEXT DEFAULT ''",
+                'clinic_phones': "VARCHAR(255) DEFAULT ''",
+                'clinic_instagram': "VARCHAR(255) DEFAULT ''",
+                'clinic_responsible': "VARCHAR(255) DEFAULT ''",
+                'clinic_working_hours': "VARCHAR(255) DEFAULT 'Segunda a Sexta, das 09:00 às 18:00'",
+                'clinic_custom_notes': "TEXT DEFAULT ''"
+            }
+            
+            for col_name, col_def in new_settings_cols.items():
+                if col_name not in existing_settings_cols:
+                    db.session.execute(text(f"ALTER TABLE system_settings ADD COLUMN {col_name} {col_def}"))
+                    db.session.commit()
+                    logging.info(f"Added missing column '{col_name}' to 'system_settings' table.")
+        except Exception as e:
+            logging.error(f"Error checking/migrating system_settings table columns: {e}")
+
     return app
 
 if __name__ == '__main__':
