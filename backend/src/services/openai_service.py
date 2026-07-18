@@ -37,6 +37,11 @@ Instruções fundamentais:
 
 5. HORÁRIO DE ATENDIMENTO:
    - O horário de atendimento oficial da clínica é de Segunda a Sexta, das 09:00 às 18:00.
+
+6. FLUXO INTELIGENTE E EVITAR REPETIÇÃO:
+   - Evite repetições desnecessárias: se você já explicou ou respondeu uma informação (ex: o que é preenchimento labial, ou o endereço), não repita a mesma explicação ou detalhes nas mensagens subsequentes.
+   - Seja direto e objetivo: se o cliente disser seu nome ou responder "Sim" à pergunta de agendamento, chame a ferramenta 'request_appointment' imediatamente. Não envie novas descrições de tratamentos nem repita perguntas que já foram feitas ou respondidas.
+   - Se o cliente responder de forma curta ou apenas confirmar o interesse, responda de forma igualmente concisa, confirmando a ação e passando o bastão sem enrolação.
 """
 
 # Tool definitions for OpenAI Function Calling
@@ -199,11 +204,10 @@ class OpenAIService:
             db.session.add(patient)
             db.session.commit()
         else:
-            if settings.beta_mode_enabled:
-                if is_allowed:
-                    patient.ai_enabled = True
-                else:
-                    patient.ai_enabled = False
+            # Se o paciente já existe, apenas desativamos a IA caso ele não esteja na whitelist
+            # e o modo beta esteja ativado. Caso contrário, respeitamos o estado atual (permitindo que o handoff e a pausa persistam).
+            if settings.beta_mode_enabled and not is_allowed:
+                patient.ai_enabled = False
                 db.session.commit()
 
         # Salvar a mensagem do paciente no banco de dados
