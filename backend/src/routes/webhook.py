@@ -32,10 +32,12 @@ def evolution_webhook():
         from_me = key.get("fromMe", False)
         remote_jid = key.get("remoteJid", "")
         
+        # Filtrar apenas conversas pessoais (ignorar grupos @g.us, listas de transmissão, canais, status)
+        if not remote_jid or not remote_jid.endswith('@s.whatsapp.net'):
+            return jsonify({"status": "ignored", "reason": "Not a personal chat"}), 200
+            
         # Filtra o número limpo do remetente
         phone = remote_jid.split('@')[0]
-        if not phone:
-            return jsonify({"status": "ignored", "reason": "No JID found"}), 200
 
         # Captura o texto da mensagem a partir dos possíveis campos do protocolo whatsapp
         message_content = ""
