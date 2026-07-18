@@ -163,6 +163,8 @@ class SystemSettings(db.Model):
     clinic_name = db.Column(db.String(255), nullable=True, default='Unic Clinic')
     clinic_address = db.Column(db.Text, nullable=True, default='')
     clinic_phones = db.Column(db.String(255), nullable=True, default='')
+    clinic_addresses = db.Column(db.Text, nullable=True, default='[]')
+    clinic_phones_list = db.Column(db.Text, nullable=True, default='[]')
     clinic_instagram = db.Column(db.String(255), nullable=True, default='')
     clinic_responsible = db.Column(db.String(255), nullable=True, default='')
     clinic_working_hours = db.Column(db.String(255), nullable=True, default='Segunda a Sexta, das 09:00 às 18:00')
@@ -177,6 +179,8 @@ class SystemSettings(db.Model):
             'clinic_name': self.clinic_name,
             'clinic_address': self.clinic_address,
             'clinic_phones': self.clinic_phones,
+            'clinic_addresses': self.clinic_addresses,
+            'clinic_phones_list': self.clinic_phones_list,
             'clinic_instagram': self.clinic_instagram,
             'clinic_responsible': self.clinic_responsible,
             'clinic_working_hours': self.clinic_working_hours,

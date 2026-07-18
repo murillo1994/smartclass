@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import requests
+import json
 from src.database import db, Patient, Message, Procedure, Appointment, Doctor, DoctorAvailability, SystemSettings
 from src.services.evolution_service import EvolutionService
 from src.config import Config
@@ -452,6 +453,18 @@ def update_settings():
         settings.clinic_address = str(data['clinic_address'])
     if 'clinic_phones' in data:
         settings.clinic_phones = str(data['clinic_phones'])
+    if 'clinic_addresses' in data:
+        val = data['clinic_addresses']
+        if isinstance(val, (list, dict)):
+            settings.clinic_addresses = json.dumps(val)
+        else:
+            settings.clinic_addresses = str(val)
+    if 'clinic_phones_list' in data:
+        val = data['clinic_phones_list']
+        if isinstance(val, (list, dict)):
+            settings.clinic_phones_list = json.dumps(val)
+        else:
+            settings.clinic_phones_list = str(val)
     if 'clinic_instagram' in data:
         settings.clinic_instagram = str(data['clinic_instagram'])
     if 'clinic_responsible' in data:

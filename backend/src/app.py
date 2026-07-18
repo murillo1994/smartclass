@@ -55,6 +55,8 @@ def create_app():
                 'clinic_name': "VARCHAR(255) DEFAULT 'Unic Clinic'",
                 'clinic_address': "TEXT DEFAULT ''",
                 'clinic_phones': "VARCHAR(255) DEFAULT ''",
+                'clinic_addresses': "TEXT DEFAULT '[]'",
+                'clinic_phones_list': "TEXT DEFAULT '[]'",
                 'clinic_instagram': "VARCHAR(255) DEFAULT ''",
                 'clinic_responsible': "VARCHAR(255) DEFAULT ''",
                 'clinic_working_hours': "VARCHAR(255) DEFAULT 'Segunda a Sexta, das 09:00 às 18:00'",

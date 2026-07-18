@@ -229,11 +229,33 @@ class OpenAIService:
             settings = SystemSettings.query.first()
             clinic_info = ""
             if settings:
+                # Formatar múltiplos endereços estruturados
+                addr_str = ""
+                try:
+                    addr_list = json.loads(settings.clinic_addresses or '[]')
+                    if addr_list and isinstance(addr_list, list):
+                        addr_str = "\n".join([f"  - {item.get('label', 'Unidade')}: {item.get('address', '')}" for item in addr_list if item.get('address')])
+                except Exception:
+                    pass
+                if not addr_str:
+                    addr_str = f"  - Unidade Principal: {settings.clinic_address}" if settings.clinic_address else "  - Não cadastrado"
+
+                # Formatar múltiplos telefones estruturados
+                phones_str = ""
+                try:
+                    phones_list = json.loads(settings.clinic_phones_list or '[]')
+                    if phones_list and isinstance(phones_list, list):
+                        phones_str = "\n".join([f"  - {item.get('label', 'Contato')}: {item.get('phone', '')}" for item in phones_list if item.get('phone')])
+                except Exception:
+                    pass
+                if not phones_str:
+                    phones_str = f"  - Contato Principal: {settings.clinic_phones}" if settings.clinic_phones else "  - Não cadastrado"
+
                 clinic_info = f"\n\n--- DADOS OFICIAIS DA CLÍNICA (USE PARA INFORMAR O PACIENTE) ---\n" \
                               f"Nome: {settings.clinic_name or 'Unic Clinic'}\n" \
                               f"Responsável Técnico/Gestor: {settings.clinic_responsible or 'Não cadastrado'}\n" \
-                              f"Endereço: {settings.clinic_address or 'Não cadastrado'}\n" \
-                              f"Telefones de Contato: {settings.clinic_phones or 'Não cadastrado'}\n" \
+                              f"Endereços / Unidades:\n{addr_str}\n" \
+                              f"Telefones de Contato:\n{phones_str}\n" \
                               f"Instagram: {settings.clinic_instagram or 'Não cadastrado'}\n" \
                               f"Horário de Funcionamento: {settings.clinic_working_hours or 'Segunda a Sexta, das 09:00 às 18:00'}\n" \
                               f"Observações/Regras Customizadas: {settings.clinic_custom_notes or 'Nenhuma'}\n" \
