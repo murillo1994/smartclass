@@ -169,6 +169,7 @@ class SystemSettings(db.Model):
     clinic_responsible = db.Column(db.String(255), nullable=True, default='')
     clinic_working_hours = db.Column(db.String(255), nullable=True, default='Segunda a Sexta, das 09:00 às 18:00')
     clinic_custom_notes = db.Column(db.Text, nullable=True, default='')
+    clinic_custom_rules = db.Column(db.Text, nullable=True, default='[]')
 
     def to_dict(self):
         return {
@@ -184,5 +185,6 @@ class SystemSettings(db.Model):
             'clinic_instagram': self.clinic_instagram,
             'clinic_responsible': self.clinic_responsible,
             'clinic_working_hours': self.clinic_working_hours,
-            'clinic_custom_notes': self.clinic_custom_notes
+            'clinic_custom_notes': self.clinic_custom_notes,
+            'clinic_custom_rules': self.clinic_custom_rules
         }

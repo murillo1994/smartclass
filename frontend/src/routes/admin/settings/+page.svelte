@@ -13,6 +13,7 @@
         clinic_instagram: "",
         clinic_working_hours: "Segunda a Sexta, das 09:00 às 18:00",
         clinic_custom_notes: "",
+        clinic_custom_rules: "[]",
         beta_mode_enabled: true,
         beta_allowed_numbers: "",
         auto_activate_ai_for_new_leads: false
@@ -24,6 +25,7 @@
     // Reactively managed arrays for the form UI
     let addresses = [{ label: "Unidade Principal", address: "" }];
     let phones = [{ label: "Contato Principal", phone: "" }];
+    let customRules = [{ title: "", content: "" }];
 
     let loading = true;
     let saving = false;
@@ -45,6 +47,7 @@
                     clinic_instagram: res.clinic_instagram || "",
                     clinic_working_hours: res.clinic_working_hours || "Segunda a Sexta, das 09:00 às 18:00",
                     clinic_custom_notes: res.clinic_custom_notes || "",
+                    clinic_custom_rules: res.clinic_custom_rules || "[]",
                     beta_mode_enabled: res.beta_mode_enabled !== undefined ? res.beta_mode_enabled : true,
                     beta_allowed_numbers: res.beta_allowed_numbers || "",
                     auto_activate_ai_for_new_leads: res.auto_activate_ai_for_new_leads !== undefined ? res.auto_activate_ai_for_new_leads : false
@@ -72,6 +75,21 @@
                     }
                 } catch (e) {
                     console.error("Erro ao fazer parse dos telefones", e);
+                }
+
+                // Parse custom rules list
+                try {
+                    const parsedRules = JSON.parse(settings.clinic_custom_rules);
+                    if (Array.isArray(parsedRules) && parsedRules.length > 0) {
+                        customRules = parsedRules;
+                    } else if (settings.clinic_custom_notes) {
+                        customRules = [{ title: "Observações Gerais", content: settings.clinic_custom_notes }];
+                    } else {
+                        customRules = [{ title: "", content: "" }];
+                    }
+                } catch (e) {
+                    console.error("Erro ao fazer parse das regras", e);
+                    customRules = [{ title: "", content: "" }];
                 }
             }
         } catch (err) {
@@ -104,6 +122,17 @@
         }
     }
 
+    function addCustomRule() {
+        customRules = [...customRules, { title: "", content: "" }];
+    }
+
+    function removeCustomRule(index) {
+        customRules = customRules.filter((_, i) => i !== index);
+        if (customRules.length === 0) {
+            customRules = [{ title: "", content: "" }];
+        }
+    }
+
     async function handleSave(e) {
         e.preventDefault();
         saving = true;
@@ -113,6 +142,7 @@
         // Sync arrays back to settings object payload
         settings.clinic_addresses = addresses.filter(a => a.address.trim());
         settings.clinic_phones_list = phones.filter(p => p.phone.trim());
+        settings.clinic_custom_rules = customRules.filter(r => r.content.trim());
 
         // Keep fallbacks updated for safety
         if (settings.clinic_addresses.length > 0) {
@@ -120,6 +150,11 @@
         }
         if (settings.clinic_phones_list.length > 0) {
             settings.clinic_phones = settings.clinic_phones_list[0].phone;
+        }
+        if (settings.clinic_custom_rules.length > 0) {
+            settings.clinic_custom_notes = settings.clinic_custom_rules.map(r => `${r.title}: ${r.content}`).join("\n");
+        } else {
+            settings.clinic_custom_notes = "";
         }
 
         try {
@@ -352,20 +387,54 @@
                 {#if activeTab === 'ai'}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                         
-                        <!-- AI Guidelines Box -->
-                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl">
-                            <div>
-                                <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Instruções Customizadas</h2>
-                                <p class="text-[10px] text-gray-400 mt-1">Oriente as respostas do robô ensinando regras e políticas internas da clínica.</p>
+                        <!-- AI Structured Guidelines Box -->
+                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl flex flex-col h-full">
+                            <div class="flex items-center justify-between border-b border-luxury-border/20 pb-2">
+                                <div>
+                                    <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest">Instruções por Tópicos</h2>
+                                    <p class="text-[9px] text-gray-400 mt-0.5">Oriente as respostas da IA cadastrando diretrizes e regras organizadas.</p>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    on:click={addCustomRule} 
+                                    class="text-[9px] uppercase tracking-wider text-luxury-accent border border-luxury-accent/30 hover:border-luxury-accent px-2 py-1 rounded bg-luxury-black transition"
+                                >
+                                    + Novo Tópico
+                                </button>
                             </div>
                             
-                            <div class="space-y-1">
-                                <textarea 
-                                    bind:value={settings.clinic_custom_notes} 
-                                    placeholder="Ex: Dispomos de manobrista no local. Não use maquiagem pesada no dia de procedimentos faciais..."
-                                    rows="10"
-                                    class="w-full bg-luxury-black border border-luxury-border/60 focus:border-luxury-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition resize-none leading-relaxed"
-                                ></textarea>
+                            <div class="space-y-4 overflow-y-auto max-h-[380px] pr-1 flex-1">
+                                {#each customRules as rule, index}
+                                    <div class="p-4 bg-luxury-black/40 border border-luxury-border/40 rounded-xl space-y-2 relative animate-fade-in">
+                                        <button 
+                                            type="button" 
+                                            on:click={() => removeCustomRule(index)} 
+                                            class="absolute right-3 top-3 text-[10px] text-red-400 hover:text-red-300 font-bold"
+                                            title="Excluir Tópico"
+                                        >
+                                            ✕
+                                        </button>
+                                        
+                                        <div class="space-y-1 pr-6">
+                                            <input 
+                                                type="text" 
+                                                bind:value={rule.title} 
+                                                placeholder="Título do Tópico (Ex: Estacionamento, Preparo Botox)" 
+                                                required
+                                                class="w-full bg-luxury-black border border-luxury-border/50 focus:border-luxury-gold rounded-lg px-3 py-1.5 text-[11px] font-semibold text-luxury-accent outline-none"
+                                            />
+                                        </div>
+                                        <div class="space-y-1">
+                                            <textarea 
+                                                bind:value={rule.content} 
+                                                placeholder="Instruções para a IA sobre este assunto..." 
+                                                required
+                                                rows="3"
+                                                class="w-full bg-luxury-black border border-luxury-border/50 focus:border-luxury-gold rounded-lg px-3 py-2 text-[11px] text-white outline-none resize-none"
+                                            ></textarea>
+                                        </div>
+                                    </div>
+                                {/each}
                             </div>
 
                             <!-- Helpful tips for the user -->
@@ -381,7 +450,7 @@
                         </div>
 
                         <!-- Whitelist & Sandbox Box -->
-                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl flex flex-col justify-between">
+                        <div class="space-y-6 bg-luxury-card/20 border border-luxury-border/30 p-6 rounded-2xl flex flex-col justify-between h-full">
                             <div class="space-y-6">
                                 <div>
                                     <h2 class="text-xs font-bold uppercase text-luxury-gold tracking-widest border-b border-luxury-border/20 pb-2">Segurança (Sandbox & Modos)</h2>

@@ -255,6 +255,17 @@ class OpenAIService:
                 if not phones_str:
                     phones_str = f"  - Contato Principal: {settings.clinic_phones}" if settings.clinic_phones else "  - Não cadastrado"
 
+                # Formatar regras e diretrizes customizadas em tópicos
+                rules_str = ""
+                try:
+                    rules_list = json.loads(settings.clinic_custom_rules or '[]')
+                    if rules_list and isinstance(rules_list, list):
+                        rules_str = "\n".join([f"  - {item.get('title', 'Tópico')}: {item.get('content', '')}" for item in rules_list if item.get('content')])
+                except Exception:
+                    pass
+                if not rules_str:
+                    rules_str = f"  - Observações Gerais: {settings.clinic_custom_notes}" if settings.clinic_custom_notes else "  - Nenhuma"
+
                 clinic_info = f"\n\n--- DADOS OFICIAIS DA CLÍNICA (USE PARA INFORMAR O PACIENTE) ---\n" \
                               f"Nome: {settings.clinic_name or 'Unic Clinic'}\n" \
                               f"Responsável Técnico/Gestor: {settings.clinic_responsible or 'Não cadastrado'}\n" \
@@ -262,7 +273,7 @@ class OpenAIService:
                               f"Telefones de Contato:\n{phones_str}\n" \
                               f"Instagram: {settings.clinic_instagram or 'Não cadastrado'}\n" \
                               f"Horário de Funcionamento: {settings.clinic_working_hours or 'Segunda a Sexta, das 09:00 às 18:00'}\n" \
-                              f"Observações/Regras Customizadas: {settings.clinic_custom_notes or 'Nenhuma'}\n" \
+                              f"Diretrizes e Regras da Clínica (Siga à risca):\n{rules_str}\n" \
                               f"-----------------------------------------------------------------\n"
             
             dynamic_prompt = SYSTEM_PROMPT + clinic_info

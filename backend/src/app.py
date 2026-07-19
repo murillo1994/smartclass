@@ -60,7 +60,8 @@ def create_app():
                 'clinic_instagram': "VARCHAR(255) DEFAULT ''",
                 'clinic_responsible': "VARCHAR(255) DEFAULT ''",
                 'clinic_working_hours': "VARCHAR(255) DEFAULT 'Segunda a Sexta, das 09:00 às 18:00'",
-                'clinic_custom_notes': "TEXT DEFAULT ''"
+                'clinic_custom_notes': "TEXT DEFAULT ''",
+                'clinic_custom_rules': "TEXT DEFAULT '[]'"
             }
             
             for col_name, col_def in new_settings_cols.items():

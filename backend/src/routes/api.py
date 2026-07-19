@@ -473,6 +473,12 @@ def update_settings():
         settings.clinic_working_hours = str(data['clinic_working_hours'])
     if 'clinic_custom_notes' in data:
         settings.clinic_custom_notes = str(data['clinic_custom_notes'])
+    if 'clinic_custom_rules' in data:
+        val = data['clinic_custom_rules']
+        if isinstance(val, (list, dict)):
+            settings.clinic_custom_rules = json.dumps(val)
+        else:
+            settings.clinic_custom_rules = str(val)
         
     db.session.commit()
     return jsonify({"success": True, "settings": settings.to_dict()}), 200
@@ -502,7 +508,8 @@ def get_clinic_profile():
         "clinic_phones_list": settings.clinic_phones_list,
         "clinic_instagram": settings.clinic_instagram,
         "clinic_working_hours": settings.clinic_working_hours,
-        "clinic_custom_notes": settings.clinic_custom_notes
+        "clinic_custom_notes": settings.clinic_custom_notes,
+        "clinic_custom_rules": settings.clinic_custom_rules
     }), 200
 
 # --- WHATSAPP CHAT HISTORY IMPORT ENDPOINTS ---
