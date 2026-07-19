@@ -169,7 +169,7 @@ class EvolutionService:
             "apikey": Config.EVOLUTION_API_KEY
         }
         try:
-            response = requests.post(url, headers=headers, timeout=10)
+            response = requests.delete(url, headers=headers, timeout=10)
             return response.status_code in [200, 201]
         except Exception as e:
             logging.error(f"Erro ao fazer logout da instância: {e}")
