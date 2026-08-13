@@ -1,15 +1,10 @@
 <!--
 Sync Impact Report:
-- Version change: None -> 1.0.0
+- Version change: 1.0.0 -> 1.1.0
 - List of modified principles:
-  - PRINCIPLE_1: Persona e Identidade do Concierge Digital (Criado)
-  - PRINCIPLE_2: Restrições Clínicas e Comerciais (Hard Boundaries) (Criado)
-  - PRINCIPLE_3: Tratamento de Mídias e Mensagens Complexas (Criado)
-  - PRINCIPLE_4: Contorno de Objeções (Playbook de Vendas) (Criado)
-  - PRINCIPLE_5: Regras de Transbordo Humano (Handoff Triggers) (Criado)
+  - PRINCIPLE_6: VI. Front-End, Tracking e Performance (Foco em Ads e Conversão) (Adicionado)
 - Added sections:
-  - Fluxo Principal de Resolução (Golden Path)
-  - Tratamento de Dados e Privacidade
+  - VI. Front-End, Tracking e Performance (Foco em Ads e Conversão)
 - Removed sections: Nenhuma
 - Templates requiring updates:
   - .specify/templates/plan-template.md: ✅ atualizado (alinhado)
@@ -37,6 +32,12 @@ Objeções referentes ao preço ("Está caro", "Achei mais barato") devem ser tr
 ### V. Regras de Transbordo Humano (Handoff Triggers)
 A IA deve acionar a função de transbordo (pausar o bot definindo `ai_enabled` como falso no banco de dados) e alertar a recepção humana quando: (1) o usuário utilizar palavras de baixo calão, demonstrar irritação ou reclamar de procedimentos anteriores; (2) o usuário solicitar expressamente para falar com "um humano", "recepcionista" ou "atendente"; (3) o usuário fizer perguntas técnicas ou médicas sobre contraindicações medicamentosas (ex: uso de Roacutan); (4) houver qualquer tipo de falha técnica na ferramenta de agendamento.
 
+### VI. Front-End, Tracking e Performance (Foco em Ads e Conversão)
+- **Instrumentação e Rastreamento**: Nunca inclua IDs de rastreamento (Google Tag Manager, Meta Pixel, Google Analytics) de forma hardcoded no HTML. Toda estrutura de tracking deve estar preparada para receber variáveis dinâmicas (ex: via Jinja2 no Flask) injetadas a partir das variáveis de ambiente (`.env`).
+- **Tagueamento de Eventos (Data Layer)**: Todo botão de ação (CTA), link de saída (ex: WhatsApp) ou formulário deve obrigatoriamente receber um atributo `id` único e um atributo de dados semântico (ex: `data-track="lead_whatsapp"` ou `data-track="submit_form"`). O rastreamento de eventos nunca deve depender de classes CSS, pois elas podem ser alteradas por questões de design.
+- **Otimização para Tráfego Pago (CPC/CPA)**: O código deve priorizar a velocidade de carregamento (Google PageSpeed). Aplique `loading="lazy"` em imagens que estão abaixo da dobra e atributo `defer` em scripts não essenciais. Landing pages lentas aumentam o custo do tráfego pago; o código gerado deve evitar isso a todo custo.
+- **Regra de Refatoração de Interface**: Ao receber um código HTML/CSS já existente, a IA está expressamente proibida de alterar o layout, o design visual ou as classes CSS de estilo, a menos que seja explicitamente solicitado. O foco da refatoração deve ser exclusivamente a injeção de tracking, melhoria de performance técnica e adição de meta tags (SEO/Open Graph) dinâmicas.
+
 ## Fluxo Principal de Resolução (Golden Path)
 
 1. **Acolhimento:** Chamar o paciente pelo nome (se disponível) e identificar o contexto da chegada (site/anúncio).
@@ -50,6 +51,6 @@ Todo e qualquer dado de paciente (dados pessoais, conversas, agendamentos) deve 
 
 ## Governance
 
-A constituição da IA define as regras e limites absolutos que o código do backend e os prompts do Concierge Digital devem seguir. Quaisquer alterações nas regras comportamentais devem ser documentadas na constituição, incrementando a versão do arquivo e atualizando os prompts do backend em conformidade.
+A constituição da IA define as regras e limites absolutos que o código do backend, os componentes de front-end e os prompts do Concierge Digital devem seguir. Quaisquer alterações nas regras comportamentais ou técnicas devem ser documentadas na constituição, incrementando a versão do arquivo e garantindo conformidade em todas as implementações futuras.
 
-**Version**: 1.0.0 | **Ratified**: 2026-07-10 | **Last Amended**: 2026-07-10
+**Version**: 1.1.0 | **Ratified**: 2026-07-10 | **Last Amended**: 2026-08-13
