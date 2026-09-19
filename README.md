@@ -16,7 +16,7 @@
 <br/>
 
 > 🌐 **Acesse a Demonstração Online em Produção:**  
-> **[http://187.77.63.90/smartclass/login](http://187.77.63.90/smartclass/login)**  
+> **[https://smartclass.mypaywise.cloud/login](https://smartclass.mypaywise.cloud/login)**  
 > *(Usuário: `univesp` \| Senha: `p4univesp`)*
 
 <br/>

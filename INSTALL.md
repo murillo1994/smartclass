@@ -3,7 +3,7 @@
 Este guia foi elaborado especialmente para que **colegas de curso, professores e avaliadores** consigam clonar, instalar e rodar o projeto **SmartClass** em seus computadores de forma simples, rápida e sem complicação técnica.
 
 > 🌐 **Dica**: Se você deseja apenas testar e utilizar o sistema sem instalar nada localmente, o SmartClass já está disponível online na VPS em:  
-> **[http://187.77.63.90/smartclass/login](http://187.77.63.90/smartclass/login)** *(Usuário: `univesp` \| Senha: `p4univesp`)*
+> **[https://smartclass.mypaywise.cloud/login](https://smartclass.mypaywise.cloud/login)** *(Usuário: `univesp` \| Senha: `p4univesp`)*
 
 ---
 

@@ -10,9 +10,9 @@ Isso significa que a integração do microcontrolador é direta: **basta conecta
 
 | Finalidade | Endpoint Oficial na VPS | Método |
 | :--- | :--- | :--- |
-| **Ingestão de Telemetria** | `http://187.77.63.90/smartclass/api/v1/medicoes` | `POST` |
-| **Health Check (Teste de Conexão)** | `http://187.77.63.90/smartclass/api/v1/health` | `GET` |
-| **Dashboard Online** | `http://187.77.63.90/smartclass/dashboard` | `GET` |
+| **Ingestão de Telemetria** | `https://smartclass.mypaywise.cloud/api/v1/medicoes` | `POST` |
+| **Health Check (Teste de Conexão)** | `https://smartclass.mypaywise.cloud/api/v1/health` | `GET` |
+| **Dashboard Online** | `https://smartclass.mypaywise.cloud/dashboard` | `GET` |
 
 ---
 
@@ -26,7 +26,7 @@ const char* WIFI_SSID     = "SUA_REDE_WIFI";
 const char* WIFI_PASSWORD = "SUA_SENHA_WIFI";
 
 // 2. URL Oficial da VPS (já pré-configurada)
-const char* SERVER_URL    = "http://187.77.63.90/smartclass/api/v1/medicoes";
+const char* SERVER_URL    = "https://smartclass.mypaywise.cloud/api/v1/medicoes";
 
 // 3. Nome da Sala monitorada
 const char* SALA_ID       = "Sala 101";
@@ -42,7 +42,7 @@ Antes mesmo de ligar o ESP32, você pode validar a comunicação com a VPS pelo 
 
 ### 1. Teste de Saúde da API (Health Check)
 ```bash
-curl -i http://187.77.63.90/smartclass/api/v1/health
+curl -i https://smartclass.mypaywise.cloud/api/v1/health
 ```
 **Resposta esperada (`200 OK`)**:
 ```json
@@ -54,12 +54,12 @@ curl -i http://187.77.63.90/smartclass/api/v1/health
 
 ### 2. Teste de Envio de Leitura (Telemetria)
 ```bash
-curl -X POST http://187.77.63.90/smartclass/api/v1/medicoes \
+curl -X POST https://smartclass.mypaywise.cloud/api/v1/medicoes \
   -H "Content-Type: application/json" \
   -d '{"sala_id": "Sala 101", "temperatura": 22.5, "umidade": 55.0}'
 ```
 
 ### 3. Teste via PowerShell (Windows):
 ```powershell
-Invoke-RestMethod -Uri "http://187.77.63.90/smartclass/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":22.5,"umidade":55.0}'
+Invoke-RestMethod -Uri "https://smartclass.mypaywise.cloud/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":22.5,"umidade":55.0}'
 ```

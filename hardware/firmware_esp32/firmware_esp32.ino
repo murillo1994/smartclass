@@ -30,7 +30,7 @@ const char* WIFI_SSID     = "SUA_REDE_WIFI";
 const char* WIFI_PASSWORD = "SUA_SENHA_WIFI";
 
 // URL Oficial da API Backend do SmartClass em Produção na VPS
-const char* SERVER_URL    = "http://187.77.63.90/smartclass/api/v1/medicoes";
+const char* SERVER_URL    = "https://smartclass.mypaywise.cloud/api/v1/medicoes";
 
 // Identificador da Sala / Ambiente monitorado por este ESP32
 const char* SALA_ID       = "Sala 101";

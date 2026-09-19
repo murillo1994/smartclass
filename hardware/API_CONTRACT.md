@@ -6,7 +6,7 @@ Este documento define o contrato oficial de comunicação entre o hardware (ESP3
 
 ## 🌐 Endpoints Oficiais em Produção (VPS)
 
-- **Base URL Oficial**: `http://187.77.63.90/smartclass/api/v1`
+- **Base URL Oficial**: `https://smartclass.mypaywise.cloud/api/v1`
 - **Base URL Local (Desenvolvimento)**: `http://localhost:5070/api/v1`
 
 ---
@@ -90,12 +90,12 @@ Registra uma nova leitura climática realizada pelo sensor no ambiente escolar.
 
 ### Teste via cURL:
 ```bash
-curl -X POST http://187.77.63.90/smartclass/api/v1/medicoes \
+curl -X POST https://smartclass.mypaywise.cloud/api/v1/medicoes \
   -H "Content-Type: application/json" \
   -d '{"sala_id": "Sala 101", "temperatura": 21.8, "umidade": 52.0}'
 ```
 
 ### Teste via PowerShell (Windows):
 ```powershell
-Invoke-RestMethod -Uri "http://187.77.63.90/smartclass/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":21.8,"umidade":52.0}'
+Invoke-RestMethod -Uri "https://smartclass.mypaywise.cloud/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":21.8,"umidade":52.0}'
 ```

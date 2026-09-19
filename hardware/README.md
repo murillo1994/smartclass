@@ -3,8 +3,8 @@
 Bem-vindo ao kit de desenvolvimento de hardware do **SmartClass**.
 
 O backend do projeto já está **hospedado e ativo em produção na VPS**:
-- **Servidor Ativo**: `http://187.77.63.90/smartclass/api/v1`
-- **Dashboard Online**: `http://187.77.63.90/smartclass/dashboard`
+- **Servidor Ativo**: `https://smartclass.mypaywise.cloud/api/v1`
+- **Dashboard Online**: `https://smartclass.mypaywise.cloud/dashboard`
 
 ---
 
