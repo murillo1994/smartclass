@@ -44,16 +44,4 @@ Thumbs.db
 *.sln
 *.swp
 
-# Unrelated project folders & archives
-*.zip
-advogado/
-atanazio_modas/
-atanazio_modas_deploy/
-dr_pedro_amaral_lp/
-estudio18-landingpage-main/
-linktree/
-newproj/
-pediatra/
-unic_clinic_lp/
-templates/
 
