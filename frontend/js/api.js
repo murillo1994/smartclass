@@ -1,14 +1,16 @@
-/**
- * SmartClass - Módulo de Comunicação com a API RESTful
- */
+function getApiBaseUrl() {
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+  const origin = window.location.origin;
+  const pathname = window.location.pathname;
+  const basePath = pathname.startsWith('/smartclass') ? '/smartclass/api/v1' : '/api/v1';
 
-const API_BASE_URL = window.API_BASE_URL || (
-  window.location.port === '5000'
-    ? '/api/v1'
-    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5000/api/v1'
-        : `${window.location.origin}/api/v1`)
-);
+  if (window.location.port === '5000' || (!origin.includes('localhost:3000') && !origin.includes('127.0.0.1:3000'))) {
+    return `${origin}${basePath}`;
+  }
+  return 'http://localhost:5000/api/v1';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export async function checkApiHealth() {
   try {

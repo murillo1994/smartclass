@@ -1,11 +1,16 @@
-/**
- * SmartClass - Módulo de Autenticação e Sessão do Operador
- */
-const API_BASE_URL = window.location.port === '5000'
-  ? ''
-  : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:5000'
-      : '');
+function getApiBaseUrl() {
+  if (window.API_BASE_URL) return window.API_BASE_URL;
+  const origin = window.location.origin;
+  const pathname = window.location.pathname;
+  const basePath = pathname.startsWith('/smartclass') ? '/smartclass/api/v1' : '/api/v1';
+
+  if (window.location.port === '5000' || (!origin.includes('localhost:3000') && !origin.includes('127.0.0.1:3000'))) {
+    return `${origin}${basePath}`;
+  }
+  return 'http://localhost:5000/api/v1';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const AUTH_KEYS = {
   TOKEN: 'smartclass_auth_token',
@@ -15,7 +20,7 @@ export const AUTH_KEYS = {
 
 export async function loginUser(username, password, rememberMe = true) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
