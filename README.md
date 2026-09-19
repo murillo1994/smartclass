@@ -13,6 +13,14 @@
 **Projeto Integrador em Computação — Universidade Virtual do Estado de São Paulo (UNIVESP)**  
 *Uma solução aberta de Internet das Coisas (IoT) e Inteligência de Dados para transformar a qualidade ambiental em salas de aula e espaços pedagógicos.*
 
+<br/>
+
+> 🌐 **Acesse a Demonstração Online em Produção:**  
+> **[http://187.77.63.90/smartclass/login](http://187.77.63.90/smartclass/login)**  
+> *(Usuário: `univesp` \| Senha: `p4univesp`)*
+
+<br/>
+
 [🚀 Guia de Instalação Rápida](./INSTALL.md) • [🔌 Kit de Hardware ESP32](./hardware/README.md) • [📜 Contrato de API](./hardware/API_CONTRACT.md) • [🕹️ Simulação Wokwi](./hardware/wokwi_project/README.md)
 
 </div>
@@ -186,7 +194,7 @@ Projeto desenvolvido como parte do **Projeto Integrador em Computação — UNIV
 
 | Integrante | Função Principal |
 | :--- | :--- |
-| **Murilo Silva** | Arquitetura de Software, Backend & Frontend Web |
+| **Murillo Augusto** | Arquitetura de Software, Backend & Frontend Web |
 | **Desenvolvimento de Hardware** | Montagem de Bancada IoT, Firmware ESP32 & Sensores |
 | **Pesquisa Pedagógica e Normativa** | Levantamento de Parâmetros Térmicos e Documentação |
 

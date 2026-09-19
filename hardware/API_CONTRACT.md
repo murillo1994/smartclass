@@ -4,7 +4,14 @@ Este documento define o contrato oficial de comunicação entre o hardware (ESP3
 
 ---
 
-## 📡 Endpoint Principal de Ingestão de Telemetria
+## 🌐 Endpoints Oficiais em Produção (VPS)
+
+- **Base URL Oficial**: `http://187.77.63.90/smartclass/api/v1`
+- **Base URL Local (Desenvolvimento)**: `http://localhost:5070/api/v1`
+
+---
+
+## 📡 1. Ingestão de Telemetria
 
 ### `POST /api/v1/medicoes`
 
@@ -40,23 +47,21 @@ Registra uma nova leitura climática realizada pelo sensor no ambiente escolar.
 ### 📤 Respostas do Servidor (Códigos HTTP)
 
 #### 1. Sucesso: `201 Created`
-Retornado quando a medição foi validada, classificada e salva no banco de dados com sucesso.
 ```json
 {
   "status": "success",
   "message": "Medição registrada com sucesso.",
   "data": {
-    "id": 142,
+    "id": 1,
     "sala_id": "Sala 101",
     "temperatura": 22.5,
     "umidade": 58.2,
-    "data_registro": "2026-09-19T09:20:00.000000-03:00"
+    "data_registro": "2026-09-19T13:15:24.421213+00:00"
   }
 }
 ```
 
 #### 2. Erro de Validação: `400 Bad Request`
-Retornado se faltar `sala_id`, `temperatura` ou se os valores forem inválidos.
 ```json
 {
   "status": "error",
@@ -66,10 +71,9 @@ Retornado se faltar `sala_id`, `temperatura` ou se os valores forem inválidos.
 
 ---
 
-## 🔍 Endpoint de Health Check
+## 🔍 2. Health Check (Verificação de Status)
 
 ### `GET /api/v1/health`
-Útil para o ESP32 ou desenvolvedor testar se a API está online e respondendo antes de começar a enviar dados.
 
 - **Método**: `GET`
 - **Resposta `200 OK`**:
@@ -82,16 +86,16 @@ Retornado se faltar `sala_id`, `temperatura` ou se os valores forem inválidos.
 
 ---
 
-## 🧪 Comandos de Teste Rápido no Computador
+## 🧪 Comandos de Teste com a VPS
 
-### Teste via cURL (Linux / macOS / Git Bash / PowerShell):
+### Teste via cURL:
 ```bash
-curl -X POST http://localhost:5000/api/v1/medicoes \
+curl -X POST http://187.77.63.90/smartclass/api/v1/medicoes \
   -H "Content-Type: application/json" \
   -d '{"sala_id": "Sala 101", "temperatura": 21.8, "umidade": 52.0}'
 ```
 
-### Teste via PowerShell nativo (Windows):
+### Teste via PowerShell (Windows):
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:5000/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":21.8,"umidade":52.0}'
+Invoke-RestMethod -Uri "http://187.77.63.90/smartclass/api/v1/medicoes" -Method Post -ContentType "application/json" -Body '{"sala_id":"Sala 101","temperatura":21.8,"umidade":52.0}'
 ```

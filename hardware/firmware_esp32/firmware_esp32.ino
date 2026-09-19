@@ -25,16 +25,12 @@
 // =========================================================================================
 
 // Credenciais da Rede Wi-Fi (o ESP32 suporta apenas redes 2.4 GHz)
-// Pode ser o Wi-Fi de casa, da faculdade ou o 4G roteado pelo celular.
+// Pode ser o Wi-Fi de sua casa, da faculdade ou o 4G roteado pelo celular.
 const char* WIFI_SSID     = "SUA_REDE_WIFI";
 const char* WIFI_PASSWORD = "SUA_SENHA_WIFI";
 
-// URL da API Backend do SmartClass na sua VPS
-// Exemplos:
-// - Com domínio e HTTPS: "https://smartclass.seudominio.com/api/v1/medicoes"
-// - Com IP direto da VPS: "http://SEU_IP_VPS:5000/api/v1/medicoes"
-// - Em teste local:       "http://192.168.1.100:5000/api/v1/medicoes"
-const char* SERVER_URL    = "http://SEU_IP_VPS:5000/api/v1/medicoes";
+// URL Oficial da API Backend do SmartClass em Produção na VPS
+const char* SERVER_URL    = "http://187.77.63.90/smartclass/api/v1/medicoes";
 
 // Identificador da Sala / Ambiente monitorado por este ESP32
 const char* SALA_ID       = "Sala 101";
