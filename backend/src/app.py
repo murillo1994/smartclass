@@ -64,13 +64,13 @@ def create_app(config_class=Config):
     import os
     from flask import send_from_directory
 
-    possible_frontend_dirs = [
-        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend")),
+    candidates = [
         os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend")),
         "/app/frontend",
         "/root/smartclass/frontend"
     ]
-    frontend_dir = next((d for d in possible_frontend_dirs if os.path.isdir(d)), possible_frontend_dirs[0])
+    frontend_dir = next((c for c in candidates if os.path.isdir(c) and os.path.exists(os.path.join(c, "login.html"))), candidates[0])
 
     # Rota raiz básica
     @app.route("/", methods=["GET"])
