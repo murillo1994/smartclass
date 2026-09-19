@@ -157,26 +157,46 @@
       <!-- Controles de Conectividade, Atualização & Tema -->
       <div class="flex items-center flex-wrap gap-2.5">
         
-        <!-- Status de Conexão com Radar Pulse (Modo Simulação IoT) -->
-        <div id="connectionBadge" title="Modo de Simulação IoT ativo" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800/40 shadow-subtle transition-all">
+        <!-- Status de Conexão com Radar Pulse (Modo Simulação IoT / Hardware Real) -->
+        <div id="connectionBadge" title="Status da Fonte de Telemetria" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800/40 shadow-subtle transition-all">
           <span class="relative flex h-2 w-2">
             <span id="connectionPing" class="radar-pulse absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
             <span id="connectionDot" class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
           </span>
-          <span id="connectionText" class="tracking-tight">Simulação IoT Ativa 📡</span>
+          <span id="connectionText" class="tracking-tight">Simulador: 30s 📡</span>
         </div>
 
-        <!-- Indicador de Última Atualização -->
-        <span id="lastUpdateLabel" class="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden lg:inline-block"></span>
-
-        <!-- Seletor de Intervalo de Atualização -->
+        <!-- Seletor de Frequência do Simulador IoT -->
         <div class="flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700/70 text-xs">
-          <span class="text-slate-500 dark:text-slate-400 font-medium px-1.5 text-[11px]">Intervalo:</span>
+          <span class="text-slate-500 dark:text-slate-400 font-medium px-1 text-[11px]">Simulador:</span>
+          <select id="selectSimInterval" title="Defina o intervalo de geração de telemetria simulada ou desative para usar apenas hardware real" class="bg-white dark:bg-slate-900 rounded-lg px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs cursor-pointer">
+            <option value="0">Desativado (Hardware Real)</option>
+            <option value="15000">A cada 15s</option>
+            <option value="30000" selected>A cada 30s (Padrão)</option>
+            <option value="60000">A cada 1 min</option>
+            <option value="300000">A cada 5 min</option>
+          </select>
+        </div>
+
+        <!-- Botão de Emissão de 1 Leitura Avulsa / Manual -->
+        <button id="btnSimulate" title="Gerar 1 medição avulsa sob demanda para teste rápido" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm hover:shadow active:scale-95 transition-all">
+          <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
+          </svg>
+          <span>⚡ 1 Leitura</span>
+        </button>
+
+        <!-- Indicador de Última Atualização -->
+        <span id="lastUpdateLabel" class="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden xl:inline-block"></span>
+
+        <!-- Seletor de Intervalo de Atualização de Tela -->
+        <div class="flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700/70 text-xs">
+          <span class="text-slate-500 dark:text-slate-400 font-medium px-1 text-[11px]">Atualizar:</span>
           <select id="selectAutoRefresh" class="bg-white dark:bg-slate-900 rounded-lg px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs cursor-pointer">
-            <option value="5000" selected>5s</option>
-            <option value="10000">10s</option>
+            <option value="5000">5s</option>
+            <option value="10000" selected>10s</option>
             <option value="30000">30s</option>
-            <option value="0">Pausado</option>
+            <option value="0">Manual</option>
           </select>
         </div>
 
@@ -197,20 +217,6 @@
           <svg id="iconMoon" class="w-4 h-4 block dark:hidden text-slate-600 group-hover:-rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
           </svg>
-        </button>
-
-        <!-- Botão Alternador do Motor de Simulação Contínua -->
-        <button id="btnToggleSimStream" title="Ativar/Pausar transmissão contínua de simulação" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-semibold shadow-subtle active:scale-95 transition-all">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="simStreamText">Simulador Ativo</span>
-        </button>
-
-        <!-- Botão de Simulação Rápida / Lote -->
-        <button id="btnSimulate" title="Emitir lote de novas leituras simuladas agora" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm hover:shadow active:scale-95 transition-all">
-          <svg class="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-          </svg>
-          + Leitura
         </button>
 
         <!-- Divisor Vertical -->

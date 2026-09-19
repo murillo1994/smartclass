@@ -54,8 +54,7 @@ class SmartClassDashboard {
       iconMoon: document.getElementById('iconMoon'),
       
       // Simulation Stream Controls
-      btnToggleSimStream: document.getElementById('btnToggleSimStream'),
-      simStreamText: document.getElementById('simStreamText'),
+      selectSimInterval: document.getElementById('selectSimInterval'),
       
       // User Profile & Logout
       btnLogout: document.getElementById('btnLogout'),
@@ -95,28 +94,49 @@ class SmartClassDashboard {
   }
 
   initSimulation() {
-    startContinuousSimulation(() => {
-      this.refreshData(false);
-    }, 6000);
+    const saved = localStorage.getItem('smartclass_sim_interval');
+    const intervalMs = saved !== null ? parseInt(saved, 10) : 30000;
+    if (this.el.selectSimInterval) {
+      this.el.selectSimInterval.value = String(intervalMs);
+    }
+    this.applySimulationInterval(intervalMs, false);
   }
 
-  toggleSimulation() {
-    if (isSimulationActive()) {
+  applySimulationInterval(intervalMs, showToastNotice = true) {
+    if (intervalMs === 0) {
       stopContinuousSimulation();
-      if (this.el.simStreamText) this.el.simStreamText.textContent = 'Simulador Pausado';
-      if (this.el.btnToggleSimStream) {
-        this.el.btnToggleSimStream.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700 text-xs font-semibold shadow-subtle active:scale-95 transition-all';
+      this.updateSimulationBadge(0);
+      if (showToastNotice) {
+        this.showToast('Modo Hardware Real 🔌', 'Simulador desativado. Aguardando telemetria do ESP32 físico.', 'info');
       }
-      this.showToast('Simulação Pausada', 'A emissão contínua de telemetria foi suspensa.', 'info');
     } else {
       startContinuousSimulation(() => {
         this.refreshData(false);
-      }, 6000);
-      if (this.el.simStreamText) this.el.simStreamText.textContent = 'Simulador Ativo';
-      if (this.el.btnToggleSimStream) {
-        this.el.btnToggleSimStream.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-semibold shadow-subtle active:scale-95 transition-all';
+      }, intervalMs);
+      this.updateSimulationBadge(intervalMs);
+      if (showToastNotice) {
+        const text = intervalMs >= 60000 ? `${intervalMs / 60000} min` : `${intervalMs / 1000}s`;
+        this.showToast(`Simulador Ativado (${text}) 📡`, `Transmitindo dados virtuais a cada ${text}.`, 'success');
       }
-      this.showToast('Simulação Ativada 📡', 'O motor está transmitindo medições térmicas para o backend.', 'success');
+    }
+    localStorage.setItem('smartclass_sim_interval', String(intervalMs));
+  }
+
+  updateSimulationBadge(intervalMs) {
+    if (!this.el.connectionBadge) return;
+    if (intervalMs === 0) {
+      this.el.connectionBadge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/10 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 dark:border-emerald-800/40 shadow-subtle transition-all';
+      if (this.el.connectionDot) this.el.connectionDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+      if (this.el.connectionPing) this.el.connectionPing.className = 'hidden';
+      if (this.el.connectionText) this.el.connectionText.textContent = 'Hardware Real (ESP32) 🔌';
+      this.el.connectionBadge.title = 'Simulador desativado. Monitorando telemetria real do microcontrolador.';
+    } else {
+      const text = intervalMs >= 60000 ? `${intervalMs / 60000}m` : `${intervalMs / 1000}s`;
+      this.el.connectionBadge.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800/40 shadow-subtle transition-all';
+      if (this.el.connectionDot) this.el.connectionDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-indigo-500';
+      if (this.el.connectionPing) this.el.connectionPing.className = 'radar-pulse absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75';
+      if (this.el.connectionText) this.el.connectionText.textContent = `Simulador: ${text} 📡`;
+      this.el.connectionBadge.title = `Simulação contínua transmitindo telemetria a cada ${text}.`;
     }
   }
 
@@ -167,7 +187,10 @@ class SmartClassDashboard {
   attachEventListeners() {
     this.el.btnRefresh?.addEventListener('click', () => this.refreshData(true));
     this.el.btnThemeToggle?.addEventListener('click', () => this.toggleTheme());
-    this.el.btnToggleSimStream?.addEventListener('click', () => this.toggleSimulation());
+    this.el.selectSimInterval?.addEventListener('change', (e) => {
+      const intervalMs = parseInt(e.target.value, 10);
+      this.applySimulationInterval(intervalMs, true);
+    });
     this.el.btnLogout?.addEventListener('click', () => {
       this.showToast('Encerrando Sessão...', 'Até logo!', 'info');
       setTimeout(() => logoutUser(), 400);
@@ -266,6 +289,33 @@ class SmartClassDashboard {
         this.showToast('Erro ao Exportar', err.message, 'error');
       }
     });
+  }
+
+  async handleSimulateQuickReading() {
+    if (!this.el.btnSimulate) return;
+    const origHtml = this.el.btnSimulate.innerHTML;
+    this.el.btnSimulate.disabled = true;
+    this.el.btnSimulate.innerHTML = `
+      <svg class="animate-spin w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span>Enviando...</span>
+    `;
+
+    try {
+      const res = await emitSingleReading();
+      await this.refreshData(false);
+      const room = res.data?.sala_id || 'Sala';
+      const temp = res.data?.temperatura ? res.data.temperatura.toFixed(1) : '--';
+      const hum = res.data?.umidade ? res.data.umidade.toFixed(1) : '--';
+      this.showToast('Leitura Avulsa Enviada ⚡', `${room}: ${temp}°C / ${hum}% registrado no banco.`, 'success');
+    } catch (err) {
+      this.showToast('Falha na Simulação', err.message || 'Não foi possível emitir a leitura avulsa.', 'error');
+    } finally {
+      this.el.btnSimulate.disabled = false;
+      this.el.btnSimulate.innerHTML = origHtml;
+    }
   }
 
   initChart() {
