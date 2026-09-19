@@ -1,40 +1,24 @@
-<script>
+﻿<script>
     import { onMount } from 'svelte';
     import { api } from '../routes/services/api';
     
     export let logo = "";
-    export let adminMode = false;
+    export let adminMode = true;
 
-    let menuOpen = false;
     let isLightMode = false;
+    let currentUser = null;
+    let currentTenant = null;
 
-    let whatsappUrl = `https://api.whatsapp.com/send?phone=5512999999999&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
-
-    onMount(async () => {
+    onMount(() => {
         if (typeof window !== 'undefined') {
             isLightMode = localStorage.getItem('admin_theme') === 'light';
             applyTheme();
-        }
-        
-        if (!adminMode) {
+            
             try {
-                const profile = await api.getPublicProfile();
-                if (profile && profile.clinic_phones_list) {
-                    const parsedPhones = JSON.parse(profile.clinic_phones_list);
-                    if (Array.isArray(parsedPhones) && parsedPhones.length > 0) {
-                        const targetPh = parsedPhones.find(p => p.label.toLowerCase().includes('whats') || p.label.toLowerCase().includes('celular')) || parsedPhones[0];
-                        const cleanNumber = targetPh.phone.replace(/\D/g, "");
-                        let formattedNum = cleanNumber;
-                        if (cleanNumber.length === 11 || cleanNumber.length === 10) {
-                            formattedNum = `55${cleanNumber}`;
-                        }
-                        if (formattedNum) {
-                            whatsappUrl = `https://api.whatsapp.com/send?phone=${formattedNum}&text=${encodeURIComponent("Olá! Vim do site da Unic Clinic e gostaria de mais informações.")}`;
-                        }
-                    }
-                }
+                currentUser = JSON.parse(localStorage.getItem('crm_user') || 'null');
+                currentTenant = JSON.parse(localStorage.getItem('crm_tenant') || 'null');
             } catch (e) {
-                console.error("Erro ao carregar link de Whatsapp no Header", e);
+                console.error(e);
             }
         }
     });
@@ -57,119 +41,146 @@
         }
     }
 
-    function logout() {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('unic_admin_token');
-            window.location.href = '/admin/login';
-        }
+    function handleLogout() {
+        api.logout();
     }
 </script>
 
-<header style="
-    background: rgba(250, 248, 245, 0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid #ddd5c8;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    padding: 0 2rem;
-    height: 65px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-">
-    <!-- Logo -->
-    <a href="/" style="display: flex; align-items: center;">
-        {#if logo}
-            <img src={logo} alt="Unic Clinic" style="width: 160px; height: auto; object-fit: contain; display: block;" />
+<header class="main-header">
+    <!-- Brand / Tenant Info -->
+    <div class="brand-wrap">
+        <a href={currentUser?.role === 'superadmin' ? '/admin/superadmin' : '/admin/inbox'} class="logo-link">
+            <span class="logo-text">EVOLUTION CRM</span>
+            {#if currentTenant}
+                <span class="tenant-tag">{currentTenant.name}</span>
+            {:else if currentUser?.role === 'superadmin'}
+                <span class="tenant-tag super">SUPER ADMIN</span>
+            {/if}
+        </a>
+    </div>
+
+    <!-- Navegação Adaptativa por Papel -->
+    <nav class="nav-links">
+        {#if currentUser?.role === 'superadmin'}
+            <a href="/admin/superadmin" class="nav-item">🏢 Painel Mestre</a>
         {:else}
-            <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 1.1rem; letter-spacing: 0.15em; color: #483d39; text-transform: uppercase;">
-                UNIC CLINIC
-            </span>
+            <a href="/admin/inbox" class="nav-item">📥 Inbox WhatsApp</a>
+            <a href="/admin/crm" class="nav-item">📊 Funil Kanban</a>
+            {#if currentUser?.role === 'admin'}
+                <a href="/admin/whatsapp" class="nav-item">📱 Canais WhatsApp</a>
+            {/if}
         {/if}
-    </a>
 
-    <!-- Desktop Nav -->
-    {#if !adminMode}
-        <nav style="display: flex; align-items: center; gap: 2.5rem;" class="desktop-nav">
-            <a href="#tratamentos" style="font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6b5446; font-weight: 500; text-decoration: none; transition: color 0.2s;" 
-               onmouseenter={e => e.target.style.color='#483d39'}
-               onmouseleave={e => e.target.style.color='#6b5446'}>
-                Tratamentos
-            </a>
-            <a href="#sobre" style="font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6b5446; font-weight: 500; text-decoration: none; transition: color 0.2s;"
-               onmouseenter={e => e.target.style.color='#483d39'}
-               onmouseleave={e => e.target.style.color='#6b5446'}>
-                Sobre
-            </a>
-            <a href="#contato" style="font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6b5446; font-weight: 500; text-decoration: none; transition: color 0.2s;"
-               onmouseenter={e => e.target.style.color='#483d39'}
-               onmouseleave={e => e.target.style.color='#6b5446'}>
-                Contato
-            </a>
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style="
-                font-size: 0.72rem;
-                letter-spacing: 0.1em;
-                text-transform: uppercase;
-                font-weight: 600;
-                color: #483d39;
-                text-decoration: none;
-                border: 1.5px solid #483d39;
-                padding: 0.55rem 1.4rem;
-                border-radius: 2px;
-                transition: all 0.25s;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            "
-            onmouseenter={e => { e.currentTarget.style.background='#483d39'; e.currentTarget.style.color='#faf8f5'; }}
-            onmouseleave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='#483d39'; }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.855L.057 24l6.305-1.654A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.013-1.372l-.36-.213-3.724.976 1-3.635-.234-.374A9.818 9.818 0 0112 2.182c5.42 0 9.818 4.399 9.818 9.818 0 5.42-4.399 9.818-9.818 9.818z"/></svg>
-                Agende uma consulta
-            </a>
-        </nav>
-    {:else}
-        <nav style="display: flex; align-items: center; gap: 1.5rem;">
-            <!-- Theme Toggle Button -->
-            <button on:click={toggleTheme} style="
-                background: none;
-                border: none;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0.25rem;
-                color: #6b5446;
-                transition: color 0.2s;
-            " onmouseenter={e => e.currentTarget.style.color='#483d39'}
-               onmouseleave={e => e.currentTarget.style.color='#6b5446'}
-               title={isLightMode ? "Ativar Modo Escuro" : "Ativar Modo Claro"}>
-                {#if isLightMode}
-                    <!-- Sun Icon -->
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                {:else}
-                    <!-- Moon Icon -->
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                {/if}
-            </button>
+        <div class="user-profile">
+            {#if currentUser}
+                <div class="user-details">
+                    <span class="user-name">{currentUser.name}</span>
+                    <span class="user-role">{currentUser.role === 'superadmin' ? 'Master' : currentUser.role === 'admin' ? 'Gestor' : 'Atendente'}</span>
+                </div>
+            {/if}
 
-            <a href="/" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Website</a>
-            <a href="/admin/whatsapp" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">WhatsApp</a>
-            <a href="/admin/settings" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Clínica</a>
-            <a href="/admin/procedures" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Procedimentos</a>
-            <a href="/admin/doctors" style="font-size: 0.75rem; color: #6b5446; text-decoration: none;">Médicos &amp; Agenda</a>
-            <a href="/admin/crm" style="font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: #483d39; text-decoration: none; border: 1px solid #483d39; padding: 0.4rem 1rem; border-radius: 2px;">Painel CRM</a>
-            <button on:click={logout} style="font-size: 0.75rem; color: #9c4c4c; background: none; border: none; font-weight: 600; cursor: pointer; transition: color 0.2s;"
-                    onmouseenter={e => e.target.style.color='#7f3232'}
-                    onmouseleave={e => e.target.style.color='#9c4c4c'}>
+            <button on:click={handleLogout} class="btn-logout" title="Sair da Conta">
                 Sair
             </button>
-        </nav>
-    {/if}
+        </div>
+    </nav>
 </header>
 
 <style>
-    @media (max-width: 768px) {
-        .desktop-nav { display: none !important; }
+    .main-header {
+        background: #ffffff;
+        border-bottom: 1px solid #e8e2de;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding: 0 24px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .brand-wrap {
+        display: flex;
+        align-items: center;
+    }
+    .logo-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+    }
+    .logo-text {
+        font-family: inherit;
+        font-weight: 800;
+        font-size: 1.15rem;
+        letter-spacing: -0.01em;
+        color: #2c2523;
+    }
+    .tenant-tag {
+        font-size: 0.75rem;
+        background: #f0eae6;
+        color: #5c4e47;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+    }
+    .tenant-tag.super {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .nav-item {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #5c4e47;
+        text-decoration: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        transition: all 0.15s;
+    }
+    .nav-item:hover {
+        background: #f8f6f4;
+        color: #2c2523;
+    }
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-left: 1px solid #e8e2de;
+        padding-left: 16px;
+    }
+    .user-details {
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+    }
+    .user-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #2c2523;
+    }
+    .user-role {
+        font-size: 0.7rem;
+        color: #8c827c;
+        text-transform: uppercase;
+    }
+    .btn-logout {
+        font-size: 0.8rem;
+        color: #dc2626;
+        background: #fef2f2;
+        border: 1px solid #fee2e2;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .btn-logout:hover {
+        background: #fee2e2;
     }
 </style>

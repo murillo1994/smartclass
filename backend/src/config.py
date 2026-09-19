@@ -1,22 +1,22 @@
-import os
+﻿import os
 from dotenv import load_dotenv
 
-# Load local environment variables if available
+# Carrega variáveis do arquivo .env caso exista
 load_dotenv()
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", 
-        "postgresql://unic_admin:unic_secure_pass@localhost:5432/unic_clinic_db"
+    POSTGRES_DB = os.getenv("POSTGRES_DB", "smartclass_db")
+    POSTGRES_USER = os.getenv("POSTGRES_USER", "smartclass_user")
+    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "smartclass_secret")
+    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+    POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+
+    # Monta a DATABASE_URL caso não seja fornecida explicitamente
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
     )
-    DATABASE_URL = SQLALCHEMY_DATABASE_URI
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL", "http://localhost:8080")
-    EVOLUTION_API_KEY = os.getenv("EVOLUTION_API_KEY")
-    EVOLUTION_INSTANCE_NAME = os.getenv("EVOLUTION_INSTANCE_NAME", "unic_clinic")
-    EVOLUTION_WEBHOOK_SECRET = os.getenv("EVOLUTION_WEBHOOK_SECRET")
-    PORT = int(os.getenv("PORT", 5000))
+
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
-    DEBUG = FLASK_ENV == "development"
-    ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+    DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "yes")
+    PORT = int(os.getenv("PORT", "5000"))

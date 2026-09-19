@@ -1,65 +1,72 @@
-{
+﻿{
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "EvolutionAPIWebhookMessagesUpsert",
+  "title": "EvolutionApiV2MultiTenantWebhookPayload",
   "type": "object",
+  "required": ["event", "instance", "data"],
   "properties": {
     "event": {
       "type": "string",
-      "enum": ["messages.upsert"]
+      "enum": [
+        "messages.upsert",
+        "messages.update",
+        "connection.update",
+        "qrcode.updated",
+        "chats.update",
+        "contacts.update"
+      ]
     },
     "instance": {
       "type": "string",
-      "example": "unic_clinic"
+      "description": "Identificador da instancia no formato tenant_{tenant_id}"
+    },
+    "destination": {
+      "type": "string"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sender": {
+      "type": "string"
     },
     "data": {
       "type": "object",
       "properties": {
         "key": {
           "type": "object",
+          "required": ["remoteJid", "fromMe", "id"],
           "properties": {
-            "remoteJid": {
-              "type": "string",
-              "example": "5511999999999@s.whatsapp.net"
-            },
-            "fromMe": {
-              "type": "boolean",
-              "example": false
-            },
-            "id": {
-              "type": "string",
-              "example": "3EB0C34B76D74"
-            }
-          },
-          "required": ["remoteJid", "fromMe", "id"]
+            "remoteJid": { "type": "string" },
+            "fromMe": { "type": "boolean" },
+            "id": { "type": "string" }
+          }
         },
         "pushName": {
-          "type": "string",
-          "example": "João Silva"
+          "type": "string"
         },
         "message": {
           "type": "object",
           "properties": {
-            "conversation": {
-              "type": "string",
-              "example": "Olá, gostaria de agendar uma consulta."
-            },
+            "conversation": { "type": "string" },
             "extendedTextMessage": {
               "type": "object",
               "properties": {
-                "text": {
-                  "type": "string"
-                }
+                "text": { "type": "string" }
               }
-            }
+            },
+            "audioMessage": { "type": "object" },
+            "imageMessage": { "type": "object" },
+            "videoMessage": { "type": "object" },
+            "documentMessage": { "type": "object" }
           }
         },
         "messageType": {
-          "type": "string",
-          "enum": ["conversation", "extendedTextMessage", "audioMessage", "imageMessage"]
+          "type": "string"
+        },
+        "messageTimestamp": {
+          "type": "integer"
         }
-      },
-      "required": ["key", "message", "messageType"]
+      }
     }
-  },
-  "required": ["event", "instance", "data"]
+  }
 }

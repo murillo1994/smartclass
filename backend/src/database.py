@@ -1,190 +1,79 @@
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.sql import func
+import logging
+from contextlib import contextmanager
+import psycopg2
+from psycopg2 import pool
+from src.config import Config
 
-# Initialize Flask SQLAlchemy extension instance
-db = SQLAlchemy()
+logger = logging.getLogger(__name__)
 
-# Define Enum values for database integrity
-FASE_FUNIL_ENUM = ('lead_novo', 'qualificacao', 'agendamento_pendente', 'agendado', 'perdido', 'concluido')
-ORIGEM_MSG_ENUM = ('paciente', 'bot', 'recepcao')
-STATUS_AGENDA_ENUM = ('pendente', 'confirmado', 'cancelado', 'compareceu', 'no_show')
-TIPO_MIDIA_ENUM = ('texto', 'audio', 'imagem', 'video', 'documento')
+_pool = None
 
-class Patient(db.Model):
-    __tablename__ = 'patients'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=True)
-    phone = db.Column(db.String(50), unique=True, nullable=False)
-    kanban_stage = db.Column(
-        db.Enum(*FASE_FUNIL_ENUM, name='enum_fase_funil'), 
-        nullable=False, 
-        default='lead_novo'
-    )
-    ai_enabled = db.Column(db.Boolean, nullable=False, default=True)
-    is_imported = db.Column(db.Boolean, nullable=False, default=False)
-    ignored = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, server_default=func.now())
-    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
-    
-    appointments = db.relationship('Appointment', backref='patient', cascade='all, delete-orphan', lazy=True)
-    messages = db.relationship('Message', backref='patient', cascade='all, delete-orphan', lazy=True)
+def init_pool():
+    """Inicializa o pool de conexões thread-safe com PostgreSQL."""
+    global _pool
+    if _pool is None:
+        try:
+            if Config.DATABASE_URL:
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    minconn=1,
+                    maxconn=20,
+                    dsn=Config.DATABASE_URL
+                )
+            else:
+                _pool = psycopg2.pool.ThreadedConnectionPool(
+                    minconn=1,
+                    maxconn=20,
+                    host=Config.POSTGRES_HOST,
+                    port=Config.POSTGRES_PORT,
+                    database=Config.POSTGRES_DB,
+                    user=Config.POSTGRES_USER,
+                    password=Config.POSTGRES_PASSWORD
+                )
+            logger.info("Pool de conexões PostgreSQL inicializado com sucesso.")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar pool de conexões PostgreSQL: {e}")
+            _pool = None
+            raise
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'phone': self.phone,
-            'kanban_stage': self.kanban_stage,
-            'ai_enabled': self.ai_enabled,
-            'is_imported': self.is_imported,
-            'ignored': self.ignored,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
+def get_pool():
+    """Retorna o pool de conexões ativo, inicializando se necessário."""
+    global _pool
+    if _pool is None:
+        init_pool()
+    return _pool
 
-class Doctor(db.Model):
-    __tablename__ = 'doctors'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    specialty = db.Column(db.String(255), nullable=False)
-    
-    availabilities = db.relationship('DoctorAvailability', backref='doctor', cascade='all, delete-orphan', lazy=True)
-    appointments = db.relationship('Appointment', backref='doctor', lazy=True)
+@contextmanager
+def get_db_connection():
+    """Context manager para obter e liberar conexões do pool de forma segura."""
+    p = get_pool()
+    conn = p.getconn()
+    try:
+        yield conn
+    finally:
+        if p and conn:
+            p.putconn(conn)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'specialty': self.specialty
-        }
+def init_db():
+    """Executa DDL idempotente para criar tabelas e índices de telemetria."""
+    ddl_statement = """
+    CREATE TABLE IF NOT EXISTS leitura_sensores (
+        id SERIAL PRIMARY KEY,
+        sala_id VARCHAR(50) NOT NULL,
+        temperatura DECIMAL(5,2) NOT NULL,
+        umidade DECIMAL(5,2),
+        data_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+    );
 
-class DoctorAvailability(db.Model):
-    __tablename__ = 'doctor_availabilities'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='CASCADE'), nullable=False)
-    day_of_week = db.Column(db.Integer, nullable=False) # 0 = Segunda, 4 = Sexta
-    start_time = db.Column(db.String(5), nullable=False)
-    end_time = db.Column(db.String(5), nullable=False)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'doctor_id': self.doctor_id,
-            'day_of_week': self.day_of_week,
-            'start_time': self.start_time,
-            'end_time': self.end_time
-        }
-
-class Procedure(db.Model):
-    __tablename__ = 'procedures'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    duration_minutes = db.Column(db.Integer, nullable=False, default=30)
-    price = db.Column(db.Numeric(10, 2), nullable=False)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'duration_minutes': self.duration_minutes,
-            'price': float(self.price)
-        }
-
-class Appointment(db.Model):
-    __tablename__ = 'appointments'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)
-    procedure_id = db.Column(db.Integer, db.ForeignKey('procedures.id', ondelete='RESTRICT'), nullable=False)
-    doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id', ondelete='CASCADE'), nullable=True)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
-    status = db.Column(
-        db.Enum(*STATUS_AGENDA_ENUM, name='enum_status_agenda'), 
-        nullable=False, 
-        default='pendente'
-    )
-    created_at = db.Column(db.DateTime, server_default=func.now())
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'patient_id': self.patient_id,
-            'procedure_id': self.procedure_id,
-            'doctor_id': self.doctor_id,
-            'start_time': self.start_time.isoformat() if self.start_time else None,
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'status': self.status,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-class Message(db.Model):
-    __tablename__ = 'messages'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id', ondelete='CASCADE'), nullable=False)
-    sender = db.Column(
-        db.Enum(*ORIGEM_MSG_ENUM, name='enum_origem_msg'), 
-        nullable=False
-    )
-    content = db.Column(db.Text, nullable=False)
-    media_type = db.Column(
-        db.Enum(*TIPO_MIDIA_ENUM, name='enum_tipo_midia'), 
-        nullable=False, 
-        default='texto'
-    )
-    created_at = db.Column(db.DateTime, server_default=func.now())
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'patient_id': self.patient_id,
-            'sender': self.sender,
-            'content': self.content,
-            'media_type': self.media_type,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-class SystemSettings(db.Model):
-    __tablename__ = 'system_settings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    beta_mode_enabled = db.Column(db.Boolean, nullable=False, default=True)
-    beta_allowed_numbers = db.Column(db.Text, nullable=False, default='')
-    auto_activate_ai_for_new_leads = db.Column(db.Boolean, nullable=False, default=False)
-    
-    # Clinic Institutional Profile Fields
-    clinic_name = db.Column(db.String(255), nullable=True, default='Unic Clinic')
-    clinic_address = db.Column(db.Text, nullable=True, default='')
-    clinic_phones = db.Column(db.String(255), nullable=True, default='')
-    clinic_addresses = db.Column(db.Text, nullable=True, default='[]')
-    clinic_phones_list = db.Column(db.Text, nullable=True, default='[]')
-    clinic_instagram = db.Column(db.String(255), nullable=True, default='')
-    clinic_responsible = db.Column(db.String(255), nullable=True, default='')
-    clinic_working_hours = db.Column(db.String(255), nullable=True, default='Segunda a Sexta, das 09:00 às 18:00')
-    clinic_custom_notes = db.Column(db.Text, nullable=True, default='')
-    clinic_custom_rules = db.Column(db.Text, nullable=True, default='[]')
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'beta_mode_enabled': self.beta_mode_enabled,
-            'beta_allowed_numbers': self.beta_allowed_numbers,
-            'auto_activate_ai_for_new_leads': self.auto_activate_ai_for_new_leads,
-            'clinic_name': self.clinic_name,
-            'clinic_address': self.clinic_address,
-            'clinic_phones': self.clinic_phones,
-            'clinic_addresses': self.clinic_addresses,
-            'clinic_phones_list': self.clinic_phones_list,
-            'clinic_instagram': self.clinic_instagram,
-            'clinic_responsible': self.clinic_responsible,
-            'clinic_working_hours': self.clinic_working_hours,
-            'clinic_custom_notes': self.clinic_custom_notes,
-            'clinic_custom_rules': self.clinic_custom_rules
-        }
+    CREATE INDEX IF NOT EXISTS idx_leitura_sensores_sala_data 
+    ON leitura_sensores (sala_id, data_registro DESC);
+    """
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(ddl_statement)
+                conn.commit()
+        logger.info("Tabela 'leitura_sensores' e índices verificados/inicializados com sucesso.")
+    except Exception as e:
+        logger.error(f"Erro ao inicializar schema do banco de dados: {e}")
+        # Não trava a inicialização caso o banco ainda esteja subindo, mas loga erro
+        raise

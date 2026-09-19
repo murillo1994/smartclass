@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50/60 selection:bg-indigo-500 selection:text-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartClass • Monitoramento Térmico IoT</title>
+  
+  <!-- Script Anti-FOUC de Inicialização Imediata do Tema (Evita Flash Branco) -->
+  <script>
+    (function() {
+      // 1. Verificação de Autenticação (Auth Guard)
+      const token = localStorage.getItem('smartclass_auth_token') || sessionStorage.getItem('smartclass_auth_token');
+      if (!token) {
+        window.location.replace('login.html');
+      }
+
+      // 2. Aplicação do Tema
+      const savedTheme = localStorage.getItem('smartclass_theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+
+  <!-- Tailwind CSS via CDN com darkMode: 'class' -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          boxShadow: {
+            'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
+            'card': '0 4px 20px -4px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.02)',
+            'card-hover': '0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.03)',
+            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- jsPDF & jsPDF-AutoTable para Exportação -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Micro-animação suave de entrada para as abas */
+    @keyframes tabFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tab-view:not(.hidden) {
+      animation: tabFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Estilo ativo para as abas (Segmented Control) */
+    .tab-btn.tab-active {
+      background-color: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+      font-weight: 600;
+    }
+
+    .dark .tab-btn.tab-active {
+      background-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      border-color: rgba(51, 65, 85, 0.8);
+    }
+
+    /* Animação de radar pulsante */
+    @keyframes radarPing {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.6); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    .radar-pulse {
+      animation: radarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    /* Custom scrollbar discreta */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col text-slate-800 dark:text-slate-100 antialiased bg-slate-50/70 dark:bg-slate-950 transition-colors duration-200">
+
+  <!-- ========================================================================= -->
+  <!-- HEADER PRINCIPAL (Frosted Glass & Branding Refinado) -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Logotipo & Título da Aplicação -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 flex items-center justify-center text-white shadow-sm ring-1 ring-indigo-500/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">SmartClass</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700">
+              Módulo IoT
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium -mt-0.5">Monitoramento de Conforto Térmico Escolar</p>
+        </div>
+      </div>
+
+      <!-- Controles de Conectividade, Atualização & Tema -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        
+        <!-- Status de Conexão com Radar Pulse (Modo Simulação IoT) -->
+        <div id="connectionBadge" title="Modo de Simulação IoT ativo" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20 dark:border-indigo-800/40 shadow-subtle transition-all">
+          <span class="relative flex h-2 w-2">
+            <span id="connectionPing" class="radar-pulse absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span id="connectionDot" class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+          </span>
+          <span id="connectionText" class="tracking-tight">Simulação IoT Ativa 📡</span>
+        </div>
+
+        <!-- Indicador de Última Atualização -->
+        <span id="lastUpdateLabel" class="text-[11px] text-slate-400 dark:text-slate-500 font-medium hidden lg:inline-block"></span>
+
+        <!-- Seletor de Intervalo de Atualização -->
+        <div class="flex items-center gap-1.5 bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700/70 text-xs">
+          <span class="text-slate-500 dark:text-slate-400 font-medium px-1.5 text-[11px]">Intervalo:</span>
+          <select id="selectAutoRefresh" class="bg-white dark:bg-slate-900 rounded-lg px-2 py-1 font-semibold text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs cursor-pointer">
+            <option value="5000" selected>5s</option>
+            <option value="10000">10s</option>
+            <option value="30000">30s</option>
+            <option value="0">Pausado</option>
+          </select>
+        </div>
+
+        <!-- Botão Atualizar Manual -->
+        <button id="btnRefresh" title="Sincronizar agora" class="inline-flex items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 shadow-subtle active:scale-95 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <!-- Botão Alternador de Tema (Dark / Light Mode) -->
+        <button id="btnThemeToggle" title="Alternar entre tema claro e escuro" class="inline-flex items-center justify-center p-2 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-amber-400 border border-slate-200/80 dark:border-slate-700 shadow-subtle active:scale-95 transition-all group">
+          <!-- Ícone Sol (Modo Escuro Ativo -> Mudar para Claro) -->
+          <svg id="iconSun" class="w-4 h-4 hidden dark:block text-amber-400 group-hover:rotate-45 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+          <!-- Ícone Lua (Modo Claro Ativo -> Mudar para Escuro) -->
+          <svg id="iconMoon" class="w-4 h-4 block dark:hidden text-slate-600 group-hover:-rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+          </svg>
+        </button>
+
+        <!-- Botão Alternador do Motor de Simulação Contínua -->
+        <button id="btnToggleSimStream" title="Ativar/Pausar transmissão contínua de simulação" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 text-xs font-semibold shadow-subtle active:scale-95 transition-all">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="simStreamText">Simulador Ativo</span>
+        </button>
+
+        <!-- Botão de Simulação Rápida / Lote -->
+        <button id="btnSimulate" title="Emitir lote de novas leituras simuladas agora" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-700 text-white font-semibold text-xs shadow-sm hover:shadow active:scale-95 transition-all">
+          <svg class="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          + Leitura
+        </button>
+
+        <!-- Divisor Vertical -->
+        <div class="h-5 w-[1px] bg-slate-200 dark:bg-slate-800 hidden sm:block mx-0.5"></div>
+
+        <!-- Perfil do Operador e Botão Sair -->
+        <div class="flex items-center gap-2">
+          <div class="hidden md:flex items-center gap-2 pl-1 text-xs">
+            <div class="w-7 h-7 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs border border-indigo-500/20">
+              <span id="userAvatar">U</span>
+            </div>
+            <div class="text-left leading-tight">
+              <p id="userNameDisplay" class="font-bold text-slate-800 dark:text-slate-200 text-xs">univesp</p>
+              <p class="text-[10px] text-slate-400 font-medium">Operador</p>
+            </div>
+          </div>
+
+          <button id="btnLogout" title="Encerrar sessão" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/60 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 border border-slate-200/80 dark:border-slate-700 text-xs font-semibold shadow-subtle active:scale-95 transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            <span class="hidden sm:inline">Sair</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner de Advertência de Desconexão -->
+  <div id="errorBanner" class="hidden bg-rose-500/10 dark:bg-rose-950/40 border-b border-rose-500/20 px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 text-rose-800 dark:text-rose-300 text-xs font-medium">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-rose-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <span>Servidor de telemetria offline ou inacessível.</span>
+        <span id="errorMessage" class="text-slate-600 dark:text-slate-400 font-normal"></span>
+      </div>
+      <button onclick="window.dashboardApp.refreshData(true)" class="font-bold underline hover:text-rose-950 dark:hover:text-rose-200 transition-colors">Tentar reconectar</button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- BARRA DE NAVEGAÇÃO EM ABAS (Segmented Control Elegante) -->
+  <!-- ========================================================================= -->
+  <div class="bg-white/60 dark:bg-slate-900/60 border-b border-slate-200/60 dark:border-slate-800/60 sticky top-[57px] z-20 backdrop-blur-md transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <nav class="inline-flex p-1 bg-slate-200/60 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/60 gap-1 overflow-x-auto max-w-full">
+        
+        <button id="tabBtn-overview" onclick="window.dashboardApp.switchTab('overview')" class="tab-btn tab-active flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-150 whitespace-nowrap">
+          <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          </svg>
+          <span>Visão Geral</span>
+        </button>
+
+        <button id="tabBtn-charts" onclick="window.dashboardApp.switchTab('charts')" class="tab-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-150 whitespace-nowrap">
+          <svg class="w-4 h-4 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+          </svg>
+          <span>Análise & Gráficos</span>
+        </button>
+
+        <button id="tabBtn-history" onclick="window.dashboardApp.switchTab('history')" class="tab-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-150 whitespace-nowrap">
+          <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+          </svg>
+          <span>Histórico de Dados</span>
+        </button>
+
+        <button id="tabBtn-guide" onclick="window.dashboardApp.switchTab('guide')" class="tab-btn flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-150 whitespace-nowrap">
+          <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <span>Guia & Hardware IoT</span>
+        </button>
+
+      </nav>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CONTEÚDO PRINCIPAL (Renderização Dinâmica) -->
+  <!-- ========================================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ======================================================================= -->
+    <!-- ABA 1: VISÃO GERAL (TEMPO REAL) -->
+    <!-- ======================================================================= -->
+    <div id="view-overview" class="tab-view space-y-6">
+      
+      <!-- Cards de Métricas Consolidadas (KPIs com SVGs e Elevação Suave) -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Card: Total de Salas -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card hover:shadow-card-hover transition-all duration-200 relative overflow-hidden group">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ambientes Ativos</span>
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100/60 dark:border-indigo-800/60 group-hover:scale-105 transition-transform">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span id="statTotalSalas" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">0</span>
+            <span class="text-xs text-slate-400 font-medium">salas monitoradas</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-medium">Ambientes em simulação ativa</p>
+        </div>
+
+        <!-- Card: Média Térmica -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card hover:shadow-card-hover transition-all duration-200 relative overflow-hidden group">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Média Térmica Geral</span>
+            <div class="w-8 h-8 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center border border-orange-100/60 dark:border-orange-800/60 group-hover:scale-105 transition-transform">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span id="statMediaTemp" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">—</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-medium">Média ponderada de todas as salas</p>
+        </div>
+
+        <!-- Card: Umidade Média -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card hover:shadow-card-hover transition-all duration-200 relative overflow-hidden group">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Umidade Relativa Média</span>
+            <div class="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center border border-sky-100/60 dark:border-sky-800/60 group-hover:scale-105 transition-transform">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span id="statMediaHum" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">—</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-medium">Faixa saudável OMS: 40% a 70%</p>
+        </div>
+
+        <!-- Card: Salas Confortáveis -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card hover:shadow-card-hover transition-all duration-200 relative overflow-hidden group">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Salas Confortáveis</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100/60 dark:border-emerald-800/60 group-hover:scale-105 transition-transform">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span id="statSalasIdeais" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">—</span>
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">(20° a 24.5°C)</span>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-medium">Ambientes na faixa de conforto ideal</p>
+        </div>
+
+      </section>
+
+      <!-- Guia Ergonômico de Conforto Térmico -->
+      <section class="bg-slate-900 dark:bg-slate-900/90 text-white rounded-2xl p-5 shadow-card border border-slate-800 relative overflow-hidden">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3.5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-100">Parâmetros de Conforto Térmico Escolar (Norma Regulamentadora NR-17)</h3>
+              <p class="text-[11px] text-slate-400">Diretrizes ergonômicas para maximizar o rendimento cognitivo e atenção dos estudantes</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          
+          <div class="bg-slate-800/70 rounded-xl p-3 border border-sky-500/20">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              <p class="font-bold text-sky-300">&lt; 19.5 °C • Frio</p>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">Ambiente excessivamente refrigerado. Recomenda-se ajustar o termostato.</p>
+          </div>
+
+          <div class="bg-slate-800/70 rounded-xl p-3 border border-emerald-500/30 ring-1 ring-emerald-500/20">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <p class="font-bold text-emerald-300">20.0 °C a 24.5 °C • Ideal</p>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">Faixa ótima para concentração, retenção de conteúdo e bem-estar.</p>
+          </div>
+
+          <div class="bg-slate-800/70 rounded-xl p-3 border border-amber-500/20">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+              <p class="font-bold text-amber-300">24.6 °C a 27.0 °C • Aquecido</p>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">Risco de sonolência e fadiga. Acionar climatização preventiva.</p>
+          </div>
+
+          <div class="bg-slate-800/70 rounded-xl p-3 border border-rose-500/20">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+              <p class="font-bold text-rose-300">&gt; 27.0 °C • Calor Excessivo</p>
+            </div>
+            <p class="text-[11px] text-slate-300 mt-1.5 leading-relaxed">Compromete o foco. Ligar condicionadores de ar imediatamente.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Grid de Cartões por Sala de Aula -->
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">Salas de Aula Monitoradas</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Última leitura transmitida pelo microcontrolador de cada ambiente</p>
+          </div>
+        </div>
+
+        <!-- Estado Vazio -->
+        <div id="emptyState" class="hidden bg-white dark:bg-slate-900 border border-dashed border-slate-300/80 dark:border-slate-800 rounded-2xl p-12 text-center shadow-subtle">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+            </svg>
+          </div>
+          <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Aguardando primeiras leituras de telemetria</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            Os microcontroladores ainda não transmitiram dados. Use o botão <strong>Simular ESP32</strong> no cabeçalho para gerar medições de teste.
+          </p>
+        </div>
+
+        <!-- Skeleton Screens (Placeholder durante carregamento inicial) -->
+        <div id="roomsSkeleton" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card animate-pulse space-y-4">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28"></div>
+              <div class="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-20"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 py-2 border-t border-b border-slate-100 dark:border-slate-800">
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+            </div>
+            <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-36"></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card animate-pulse space-y-4 hidden md:block">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28"></div>
+              <div class="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-20"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 py-2 border-t border-b border-slate-100 dark:border-slate-800">
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+            </div>
+            <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-36"></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card animate-pulse space-y-4 hidden lg:block">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-slate-200 dark:bg-slate-800 rounded w-28"></div>
+              <div class="h-5 bg-slate-200 dark:bg-slate-800 rounded-full w-20"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 py-2 border-t border-b border-slate-100 dark:border-slate-800">
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+              <div class="space-y-2">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-16"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-20"></div>
+              </div>
+            </div>
+            <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-36"></div>
+          </div>
+        </div>
+
+        <!-- Grid Dinâmico de Ambientes -->
+        <div id="roomsGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+      </section>
+
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 2: ANÁLISE & GRÁFICOS -->
+    <!-- ======================================================================= -->
+    <div id="view-charts" class="tab-view hidden space-y-6">
+      
+      <!-- Seção do Gráfico Temporal -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-card">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">Série Temporal das Leituras</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Variação térmica e higrométrica contínua ao longo do tempo</p>
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <label for="selectChartRoom" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Ambiente:</label>
+              <select id="selectChartRoom" class="bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 rounded-xl px-3 py-1.5 border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-subtle">
+                <option value="all">Todas as Salas (Média Global)</option>
+              </select>
+            </div>
+
+            <!-- Botão de Exportar Relatório em PDF -->
+            <button id="btnExportChartPdf" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 font-semibold text-xs shadow-subtle active:scale-95 transition-all">
+              <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Exportar Relatório (PDF)
+            </button>
+          </div>
+        </div>
+
+        <div class="w-full h-80 pt-2">
+          <canvas id="telemetryChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Painel Didático de Análise Térmica -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card space-y-2">
+          <div class="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <h4>Comportamento Térmico & Inércia</h4>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            Salas de aula com alta densidade de alunos tendem a sofrer elevação gradual de temperatura. Acompanhar a curva de tendência permite antecipar o acionamento de climatizadores antes que o ambiente atinja a faixa de desconforto (&gt; 24.5 °C).
+          </p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800 shadow-card space-y-2">
+          <div class="flex items-center gap-2 text-sky-600 dark:text-sky-400 font-bold text-xs uppercase tracking-wider">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+            <h4>Umidade Relativa e Saúde Respiratória</h4>
+          </div>
+          <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            A Organização Mundial da Saúde (OMS) recomenda manter a umidade relativa entre <strong>40% e 70%</strong>. Valores abaixo de 30% ressecam vias respiratórias e diminuem a barreira imunológica, enquanto valores acima de 80% favorecem fungos e ácaros.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 3: HISTÓRICO DE DADOS -->
+    <!-- ======================================================================= -->
+    <div id="view-history" class="tab-view hidden space-y-6">
+      
+      <!-- Nota de Integridade Relacional -->
+      <div class="bg-indigo-500/[0.06] dark:bg-indigo-950/30 border border-indigo-500/20 dark:border-indigo-800/40 rounded-2xl p-4 flex items-start gap-3">
+        <div class="w-6 h-6 rounded-lg bg-indigo-500/10 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <div class="text-xs text-indigo-950 dark:text-indigo-200">
+          <p class="font-bold">Auditoria & Imutabilidade dos Registros</p>
+          <p class="mt-0.5 text-indigo-900/80 dark:text-indigo-300/80 leading-relaxed">
+            Todos os registros de telemetria são <strong>imutáveis (append-only)</strong> e possuem carimbos de data/hora gerados nativamente pelo PostgreSQL (<code class="bg-indigo-500/10 dark:bg-indigo-900/50 px-1 py-0.5 rounded font-mono text-[11px]">CURRENT_TIMESTAMP</code>), garantindo conformidade com a Constituição do SmartClass.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tabela de Histórico Recente -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-card overflow-hidden">
+        
+        <!-- Header da Tabela & Controles -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">Histórico de Telemetria</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Últimas medições capturadas no banco de dados</p>
+          </div>
+          
+          <!-- Filtros da Tabela & Botões de Exportação -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            
+            <!-- Barra de Busca Instantânea com Botão Limpar -->
+            <div class="relative">
+              <input id="searchInput" type="text" placeholder="Buscar sala ou ID..." class="bg-slate-50 dark:bg-slate-800 text-xs px-3 py-1.5 pr-7 rounded-xl border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 w-44 shadow-subtle">
+              <button id="btnClearSearch" class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold">✕</button>
+            </div>
+            
+            <select id="filterTableRoom" class="bg-slate-50 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-200 rounded-xl px-3 py-1.5 border border-slate-200/80 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-subtle">
+              <option value="all">Todas as Salas</option>
+            </select>
+
+            <!-- Exportar PDF -->
+            <button id="btnExportHistoryPdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800 font-semibold text-xs shadow-subtle active:scale-95 transition-all">
+              <svg class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Exportar (PDF)
+            </button>
+
+            <!-- Exportar CSV -->
+            <button id="btnExportHistoryCsv" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 font-semibold text-xs shadow-subtle active:scale-95 transition-all">
+              <svg class="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- Chips de Filtro Rápido por Status Térmico -->
+        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1 text-xs">
+          <span class="text-slate-400 dark:text-slate-500 font-medium text-[11px] shrink-0">Filtrar por Status:</span>
+          <button data-filter-status="all" class="filter-chip px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-semibold transition-all">Todos</button>
+          <button data-filter-status="ideal" class="filter-chip px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-all">Confortável (Ideal)</button>
+          <button data-filter-status="atencao" class="filter-chip px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-all">Aquecido</button>
+          <button data-filter-status="quente" class="filter-chip px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-all">Calor Excessivo</button>
+          <button data-filter-status="frio" class="filter-chip px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium transition-all">Frio</button>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200/70 dark:border-slate-800">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 dark:bg-slate-800/60 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200/70 dark:border-slate-800">
+                <th class="px-4 py-3">ID</th>
+                <th class="px-4 py-3">Sala / Ambiente</th>
+                <th class="px-4 py-3">Temperatura</th>
+                <th class="px-4 py-3">Umidade</th>
+                <th class="px-4 py-3">Classificação Térmica</th>
+                <th class="px-4 py-3">Data e Hora (Local)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-400 dark:text-slate-500">Carregando dados...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- ABA 4: GUIA DO SISTEMA & HARDWARE IOT -->
+    <!-- ======================================================================= -->
+    <div id="view-guide" class="tab-view hidden space-y-6">
+      
+      <!-- Visão Geral da Arquitetura -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-card space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 dark:text-white tracking-tight">Arquitetura de Ponta a Ponta do SmartClass</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Pipeline de telemetria dividido em três camadas desacopladas e resilientes</p>
+        </div>
+
+        <!-- Aviso de Simulação Ativa -->
+        <div class="bg-indigo-500/[0.06] dark:bg-indigo-950/40 border border-indigo-500/20 dark:border-indigo-800/50 rounded-2xl p-4 flex items-start gap-3">
+          <div class="w-7 h-7 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div class="text-xs text-indigo-950 dark:text-indigo-200">
+            <p class="font-bold">Ambiente de Demonstração (Modo Simulação Contínua)</p>
+            <p class="mt-0.5 text-indigo-900/80 dark:text-indigo-300/80 leading-relaxed">
+              O microcontrolador ESP32 físico encontra-se em fase de bancada. O sistema está executando com o <strong>Motor de Simulação Autônomo</strong> ativo, que transmite variações térmicas e de umidade realistas diretamente ao backend Flask e PostgreSQL, mantendo 100% de paridade com o hardware real.
+            </p>
+          </div>
+        </div>
+
+        <!-- Fluxo em Blocos Modernos -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          
+          <div class="bg-slate-50/70 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div>
+              <div class="w-7 h-7 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-xs mb-3">1</div>
+              <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs">Captura Física (ESP32)</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">O sensor DHT22 coleta temperatura e umidade a cada intervalo e monta o payload JSON.</p>
+            </div>
+            <span class="text-[10px] font-semibold text-orange-600 dark:text-orange-400 mt-3 uppercase tracking-wider">Wi-Fi 2.4GHz • HTTP POST</span>
+          </div>
+
+          <div class="bg-slate-50/70 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div>
+              <div class="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs mb-3">2</div>
+              <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs">Ingestão (API Flask)</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Recebe <code class="bg-slate-200/80 dark:bg-slate-800 px-1 py-0.5 rounded font-mono text-[10px] text-slate-800 dark:text-slate-200">POST /api/v1/medicoes</code>, valida tipos e limites físicos.</p>
+            </div>
+            <span class="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 mt-3 uppercase tracking-wider">Python 3.11 • RESTful</span>
+          </div>
+
+          <div class="bg-slate-50/70 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div>
+              <div class="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs mb-3">3</div>
+              <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs">Persistência Imutável</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Grava o registro com marcação temporal precisa do servidor (<code class="bg-slate-200/80 dark:bg-slate-800 px-1 py-0.5 rounded font-mono text-[10px] text-slate-800 dark:text-slate-200">CURRENT_TIMESTAMP</code>).</p>
+            </div>
+            <span class="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mt-3 uppercase tracking-wider">PostgreSQL 16 Relacional</span>
+          </div>
+
+          <div class="bg-slate-50/70 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+            <div>
+              <div class="w-7 h-7 rounded-xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-xs mb-3">4</div>
+              <h4 class="font-bold text-slate-800 dark:text-slate-100 text-xs">Painel Web Reativo</h4>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Dashboard desacoplado que consome os endpoints assincronamente via Fetch API.</p>
+            </div>
+            <span class="text-[10px] font-semibold text-sky-600 dark:text-sky-400 mt-3 uppercase tracking-wider">Tailwind • Chart.js • jsPDF</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Guia de Pinagem do Hardware & Contrato JSON -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-card space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Pinagem do Sensor no ESP32</h3>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Esquema elétrico de ligação com sensor DHT11 ou DHT22:</p>
+          
+          <div class="overflow-x-auto rounded-xl border border-slate-200/70 dark:border-slate-800">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50/80 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase font-bold border-b border-slate-200/70 dark:border-slate-800 text-[10px]">
+                <tr>
+                  <th class="px-3 py-2.5">Pino Sensor</th>
+                  <th class="px-3 py-2.5">Pino ESP32</th>
+                  <th class="px-3 py-2.5">Função</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-slate-700 dark:text-slate-300">VCC (+)</td>
+                  <td class="px-3 py-2 font-mono text-indigo-600 dark:text-indigo-400 font-medium">3.3V / VIN</td>
+                  <td class="px-3 py-2 text-slate-500 dark:text-slate-400">Alimentação elétrica</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-slate-700 dark:text-slate-300">DATA (Sinal)</td>
+                  <td class="px-3 py-2 font-mono text-indigo-600 dark:text-indigo-400 font-medium">GPIO 4</td>
+                  <td class="px-3 py-2 text-slate-500 dark:text-slate-400">Sinal digital de telemetria</td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 font-semibold text-slate-700 dark:text-slate-300">GND (-)</td>
+                  <td class="px-3 py-2 font-mono text-indigo-600 dark:text-indigo-400 font-medium">GND</td>
+                  <td class="px-3 py-2 text-slate-500 dark:text-slate-400">Terra comum</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Exemplo de Payload JSON -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-card space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Contrato de Ingestão JSON</h3>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Payload transmitido via <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono text-[11px] text-slate-800 dark:text-slate-200">POST /api/v1/medicoes</code>:</p>
+          
+          <pre class="bg-slate-900 dark:bg-slate-950 text-emerald-400 p-4 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800">
+{
+  "sala_id": "Sala 101",
+  "temperatura": 23.50,
+  "umidade": 58.20
+}
+</pre>
+          <p class="text-[11px] text-slate-400">
+            * O campo <code class="bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-800 dark:text-slate-200">umidade</code> é opcional para sensores legados de temperatura única.
+          </p>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- TOAST NOTIFICATION CONTAINER (Feedbacks Elegantes Flutuantes) -->
+  <!-- ========================================================================= -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4"></div>
+
+  <!-- Rodapé -->
+  <footer class="bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/80 dark:border-slate-800/80 py-4 mt-auto transition-colors duration-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+      <span>SmartClass • Projeto Integrador em Computação IV</span>
+      <div class="flex items-center gap-3">
+        <span>Flask RESTful</span>
+        <span>•</span>
+        <span>PostgreSQL 16</span>
+        <span>•</span>
+        <span>Docker Containerized</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Principal Modular -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

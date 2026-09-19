@@ -23,7 +23,16 @@
             if (!authenticated && !isLoginPage) {
                 goto('/admin/login');
             } else if (authenticated && isLoginPage) {
-                goto('/admin/crm');
+                try {
+                    const user = JSON.parse(localStorage.getItem('crm_user') || '{}');
+                    if (user.role === 'superadmin') {
+                        goto('/admin/superadmin');
+                    } else {
+                        goto('/admin/inbox');
+                    }
+                } catch {
+                    goto('/admin/inbox');
+                }
             }
         }
     }

@@ -1,0 +1,52 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SmartClass Dashboard API Consumption Contract",
+  "description": "Contrato de consumo dos endpoints RESTful consumidos pelo Dashboard Frontend.",
+  "consumed_endpoints": [
+    {
+      "path": "/api/v1/health",
+      "method": "GET",
+      "description": "Verificação de conectividade com a API",
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "service": { "type": "string" }
+        },
+        "required": ["status", "service"]
+      }
+    },
+    {
+      "path": "/api/v1/medicoes/recent",
+      "method": "GET",
+      "query_parameters": {
+        "limit": {
+          "type": "integer",
+          "default": 50,
+          "description": "Quantidade máxima de registros recentes a retornar"
+        }
+      },
+      "response_schema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["success"] },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "sala_id": { "type": "string" },
+                "temperatura": { "type": "number" },
+                "umidade": { "type": ["number", "null"] },
+                "data_registro": { "type": "string", "format": "date-time" }
+              },
+              "required": ["id", "sala_id", "temperatura", "data_registro"]
+            }
+          }
+        },
+        "required": ["status", "data"]
+      }
+    }
+  ]
+}

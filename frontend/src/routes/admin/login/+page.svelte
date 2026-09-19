@@ -17,8 +17,12 @@
         error = '';
 
         try {
-            await api.login(username, password);
-            goto('/admin/crm');
+            const res = await api.login(username, password);
+            if (res.user && res.user.role === 'superadmin') {
+                goto('/admin/superadmin');
+            } else {
+                goto('/admin/inbox');
+            }
         } catch (err) {
             error = err.message || 'Erro ao efetuar login';
         } finally {
@@ -28,14 +32,14 @@
 </script>
 
 <svelte:head>
-    <title>Unic Clinic — Login Administrativo</title>
+    <title>Evolution CRM SaaS — Acesso ao Painel</title>
 </svelte:head>
 
 <div class="login-page">
     <div class="login-card">
         <div class="brand">
-            <img src="/logos/unic_clinic_logo_marrom_hd.png" alt="Unic Clinic" class="logo" />
-            <span class="subtitle">Acesso Administrativo</span>
+            <h1 style="font-size: 1.6rem; font-weight: 800; color: #483d39; letter-spacing: -0.02em; margin: 0;">EVOLUTION CRM</h1>
+            <span class="subtitle">Multi-Tenant WhatsApp SaaS</span>
         </div>
 
         <form on:submit|preventDefault={handleLogin} class="login-form">
@@ -46,12 +50,12 @@
             {/if}
 
             <div class="input-group">
-                <label for="username">Usuário</label>
+                <label for="username">E-mail ou Usuário</label>
                 <input 
                     type="text" 
                     id="username" 
                     bind:value={username} 
-                    placeholder="Digite seu usuário"
+                    placeholder="ex: admin@empresa.com ou super@crm.com"
                     required
                     disabled={loading}
                 />
@@ -77,8 +81,6 @@
                 {/if}
             </button>
         </form>
-
-        <a href="/" class="btn-back">← Voltar para o Site</a>
     </div>
 </div>
 

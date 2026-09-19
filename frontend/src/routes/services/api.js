@@ -1,42 +1,44 @@
-// HTTP client to interface SvelteKit with Flask API endpoints.
-// Utilizes fallback to localhost:5000 if no dynamic environment is set.
+// Cliente HTTP REST para o Evolution CRM SaaS Multi-Tenant
 
 const getBaseUrl = () => {
     if (typeof window !== 'undefined') {
         const hostname = window.location.hostname;
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'http://localhost:5010/api';
+            return 'http://localhost:5010/api/v1';
         }
         if (hostname.endsWith('.mypaywise.cloud')) {
-            // Secure connection when using the custom domain
-            return `https://unic-api.mypaywise.cloud/api`;
+            return 'https://unic-api.mypaywise.cloud/api/v1';
         }
-        // Fallback to the same IP but on port 5010 (external backend port)
         const protocol = window.location.protocol;
-        return `${protocol}//${hostname}:5010/api`;
+        return protocol + '//' + hostname + ':5010/api/v1';
     }
-    return 'http://localhost:5010/api';
+    return 'http://localhost:5010/api/v1';
 };
 
 const BASE_URL = getBaseUrl();
 
+export const getAuthToken = () => {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('unic_admin_token');
+    }
+    return null;
+};
+
 const getHeaders = () => {
     const headers = { 'Content-Type': 'application/json' };
-    if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('unic_admin_token');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
+    const token = getAuthToken();
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
     }
     return headers;
 };
 
 export const api = {
-    async login(username, password) {
-        const res = await fetch(`${BASE_URL}/auth/login`, {
+    async login(email, password) {
+        const res = await fetch(BASE_URL + '/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ email: email, password: password })
         });
         if (!res.ok) {
             const errData = await res.json().catch(() => ({}));
@@ -45,227 +47,246 @@ export const api = {
         const data = await res.json();
         if (typeof window !== 'undefined') {
             localStorage.setItem('unic_admin_token', data.token);
+            localStorage.setItem('crm_user', JSON.stringify(data.user));
+            if (data.tenant) {
+                localStorage.setItem('crm_tenant', JSON.stringify(data.tenant));
+            } else {
+                localStorage.removeItem('crm_tenant');
+            }
         }
         return data;
     },
 
-    async getLeads() {
-        const res = await fetch(`${BASE_URL}/leads`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao buscar leads');
+    async getMe() {
+        const res = await fetch(BASE_URL + '/auth/me', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao autenticar usuário');
         return res.json();
     },
-    
-    async updateLead(id, data) {
-        const res = await fetch(`${BASE_URL}/leads/${id}`, {
-            method: 'PATCH',
+
+    logout() {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('unic_admin_token');
+            localStorage.removeItem('crm_user');
+            localStorage.removeItem('crm_tenant');
+            window.location.href = '/admin/login';
+        }
+    },
+
+    async getSuperAdminMetrics() {
+        const res = await fetch(BASE_URL + '/superadmin/metrics', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao buscar métricas globais');
+        return res.json();
+    },
+
+    async getSuperAdminTenants() {
+        const res = await fetch(BASE_URL + '/superadmin/tenants', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao listar empresas');
+        return res.json();
+    },
+
+    async createTenant(data) {
+        const res = await fetch(BASE_URL + '/superadmin/tenants', {
+            method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error('Falha ao atualizar lead');
-        return res.json();
-    },
-    
-    async getMessages(leadId) {
-        const res = await fetch(`${BASE_URL}/leads/${leadId}/messages`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter mensagens');
-        return res.json();
-    },
-    
-    async sendManualMessage(leadId, content) {
-        const res = await fetch(`${BASE_URL}/leads/${leadId}/messages`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ content })
-        });
-        if (!res.ok) throw new Error('Falha ao enviar mensagem manual');
-        return res.json();
-    },
-    
-    async getAppointments() {
-        const res = await fetch(`${BASE_URL}/appointments`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter agendamentos');
-        return res.json();
-    },
-    
-    async createAppointment(patientId, procedureId, startTime) {
-        const res = await fetch(`${BASE_URL}/appointments`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({
-                patient_id: patientId,
-                procedure_id: procedureId,
-                start_time: startTime
-            })
-        });
-        if (!res.ok) throw new Error('Falha ao registrar agendamento');
-        return res.json();
-    },
-    
-    async getProcedures() {
-        const res = await fetch(`${BASE_URL}/procedures`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter procedimentos');
-        return res.json();
-    },
-
-    async getDoctors() {
-        const res = await fetch(`${BASE_URL}/doctors`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter médicos');
-        return res.json();
-    },
-
-    async createDoctor(name, specialty) {
-        const res = await fetch(`${BASE_URL}/doctors`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ name, specialty })
-        });
-        if (!res.ok) throw new Error('Falha ao cadastrar médico');
-        return res.json();
-    },
-
-    async deleteDoctor(id) {
-        const res = await fetch(`${BASE_URL}/doctors/${id}`, {
-            method: 'DELETE',
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao excluir médico');
-        return res.json();
-    },
-
-    async getDoctorAvailability(id) {
-        const res = await fetch(`${BASE_URL}/doctors/${id}/availability`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter agenda do médico');
-        return res.json();
-    },
-
-    async updateDoctorAvailability(id, availabilities) {
-        const res = await fetch(`${BASE_URL}/doctors/${id}/availability`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(availabilities)
-        });
-        if (!res.ok) throw new Error('Falha ao atualizar agenda do médico');
-        return res.json();
-    },
-
-    async createProcedure(name, description, duration_minutes, price) {
-        const res = await fetch(`${BASE_URL}/procedures`, {
-            method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify({ name, description, duration_minutes, price })
-        });
-        if (!res.ok) throw new Error('Falha ao cadastrar procedimento');
-        return res.json();
-    },
-
-    async updateProcedure(id, data) {
-        const res = await fetch(`${BASE_URL}/procedures/${id}`, {
-            method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error('Falha ao atualizar procedimento');
-        return res.json();
-    },
-
-    async deleteProcedure(id) {
-        const res = await fetch(`${BASE_URL}/procedures/${id}`, {
-            method: 'DELETE',
-            headers: getHeaders()
         });
         if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.error || 'Falha ao excluir procedimento');
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Falha ao provisionar empresa');
         }
         return res.json();
     },
 
-    async getWhatsappStatus() {
-        const res = await fetch(`${BASE_URL}/whatsapp/status`, {
-            headers: getHeaders()
+    async updateTenantStatus(tenantId, status) {
+        const res = await fetch(BASE_URL + '/superadmin/tenants/' + tenantId + '/status', {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ status: status })
         });
-        if (!res.ok) throw new Error('Falha ao obter status do WhatsApp');
+        if (!res.ok) throw new Error('Falha ao atualizar status da empresa');
         return res.json();
     },
 
-    async getWhatsappConnect() {
-        const res = await fetch(`${BASE_URL}/whatsapp/connect`, {
-            headers: getHeaders()
-        });
-        if (!res.ok) throw new Error('Falha ao obter QR Code de conexão');
-        return res.json();
-    },
-
-    async logoutWhatsapp() {
-        const res = await fetch(`${BASE_URL}/whatsapp/logout`, {
+    async impersonateTenant(tenantId) {
+        const res = await fetch(BASE_URL + '/superadmin/tenants/' + tenantId + '/impersonate', {
             method: 'POST',
             headers: getHeaders()
         });
-        if (!res.ok) throw new Error('Falha ao desconectar o WhatsApp');
+        if (!res.ok) throw new Error('Falha ao iniciar sessão de suporte');
+        const data = await res.json();
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('unic_admin_token', data.token);
+            localStorage.setItem('crm_user', JSON.stringify(data.user));
+            localStorage.setItem('crm_tenant', JSON.stringify(data.tenant));
+        }
+        return data;
+    },
+
+    async getWhatsAppInstances() {
+        const res = await fetch(BASE_URL + '/tenant/whatsapp/instances', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao buscar instâncias de WhatsApp');
         return res.json();
     },
 
-    async getSettings() {
-        const res = await fetch(`${BASE_URL}/settings`, {
+    async createWhatsAppInstance(name) {
+        const res = await fetch(BASE_URL + '/tenant/whatsapp/instances', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ name: name })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Falha ao criar canal de WhatsApp');
+        }
+        return res.json();
+    },
+
+    async getInstanceQrCode(instanceId) {
+        const res = await fetch(BASE_URL + '/tenant/whatsapp/instances/' + instanceId + '/qrcode', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao gerar QR Code');
+        return res.json();
+    },
+
+    async logoutInstance(instanceId) {
+        const res = await fetch(BASE_URL + '/tenant/whatsapp/instances/' + instanceId + '/logout', {
+            method: 'POST',
             headers: getHeaders()
         });
-        if (!res.ok) throw new Error('Falha ao obter configurações');
+        if (!res.ok) throw new Error('Falha ao desconectar canal');
         return res.json();
     },
 
-    async updateSettings(data) {
-        const res = await fetch(`${BASE_URL}/settings`, {
+    async getTeamUsers() {
+        const res = await fetch(BASE_URL + '/tenant/users', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao listar atendentes');
+        return res.json();
+    },
+
+    async createTeamUser(data) {
+        const res = await fetch(BASE_URL + '/tenant/users', {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify(data)
         });
-        if (!res.ok) throw new Error('Falha ao atualizar configurações');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || 'Falha ao convidar usuário');
+        }
         return res.json();
     },
 
-    async getWhatsappChats() {
-        const res = await fetch(`${BASE_URL}/whatsapp/chats`, {
+    async deleteTeamUser(userId) {
+        const res = await fetch(BASE_URL + '/tenant/users/' + userId, {
+            method: 'DELETE',
             headers: getHeaders()
         });
-        if (!res.ok) throw new Error('Falha ao obter conversas do aparelho');
+        if (!res.ok) throw new Error('Falha ao inativar usuário');
         return res.json();
     },
 
-    async importWhatsappChat(phone, name, kanban_stage) {
-        const res = await fetch(`${BASE_URL}/whatsapp/import-chat`, {
+    async getInboxConversations(tab, instanceId, search) {
+        let url = BASE_URL + '/crm/inbox/conversations?tab=' + (tab || 'all');
+        if (instanceId) url += '&instance_id=' + instanceId;
+        if (search) url += '&search=' + encodeURIComponent(search);
+        const res = await fetch(url, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao buscar conversas');
+        return res.json();
+    },
+
+    async getConversationHistory(convId) {
+        const res = await fetch(BASE_URL + '/crm/inbox/conversations/' + convId + '/messages', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar histórico da conversa');
+        return res.json();
+    },
+
+    async sendMessage(convId, content, mediaUrl, mediaType) {
+        const res = await fetch(BASE_URL + '/crm/inbox/conversations/' + convId + '/messages', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ phone, name, kanban_stage })
+            body: JSON.stringify({
+                content: content,
+                media_url: mediaUrl || null,
+                media_type: mediaType || 'text'
+            })
         });
-        if (!res.ok) throw new Error('Falha ao importar conversa');
+        if (!res.ok) throw new Error('Falha ao enviar mensagem');
         return res.json();
     },
 
-    async ignoreWhatsappChat(phone) {
-        const res = await fetch(`${BASE_URL}/whatsapp/ignore-chat`, {
+    async addInternalNote(convId, content) {
+        const res = await fetch(BASE_URL + '/crm/inbox/conversations/' + convId + '/notes', {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ phone })
+            body: JSON.stringify({ content: content })
         });
-        if (!res.ok) throw new Error('Falha ao ignorar conversa');
+        if (!res.ok) throw new Error('Falha ao salvar anotação interna');
         return res.json();
     },
 
-    async getPublicProfile() {
-        const res = await fetch(`${BASE_URL}/clinic/profile`);
-        if (!res.ok) throw new Error('Falha ao obter perfil da clínica');
+    async assignConversation(convId, userId) {
+        const res = await fetch(BASE_URL + '/crm/inbox/conversations/' + convId + '/assign', {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ user_id: userId })
+        });
+        if (!res.ok) throw new Error('Falha ao atribuir conversa');
+        return res.json();
+    },
+
+    async updateConversationStatus(convId, status) {
+        const res = await fetch(BASE_URL + '/crm/inbox/conversations/' + convId + '/status', {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ status: status })
+        });
+        if (!res.ok) throw new Error('Falha ao atualizar status da conversa');
+        return res.json();
+    },
+
+    async getKanbanFunnels() {
+        const res = await fetch(BASE_URL + '/crm/kanban/funnels', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar funil Kanban');
+        return res.json();
+    },
+
+    async moveKanbanCard(contactId, stageId) {
+        const res = await fetch(BASE_URL + '/crm/kanban/cards/' + contactId + '/move', {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ stage_id: stageId })
+        });
+        if (!res.ok) throw new Error('Falha ao mover card');
+        return res.json();
+    },
+
+    async getContacts(search, tagId) {
+        let url = BASE_URL + '/crm/contacts?';
+        if (search) url += 'search=' + encodeURIComponent(search) + '&';
+        if (tagId) url += 'tag_id=' + tagId + '&';
+        const res = await fetch(url, { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar contatos');
+        return res.json();
+    },
+
+    async getQuickReplies() {
+        const res = await fetch(BASE_URL + '/crm/quick-replies', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao carregar respostas rápidas');
+        return res.json();
+    },
+
+    async createQuickReply(data) {
+        const res = await fetch(BASE_URL + '/crm/quick-replies', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Falha ao cadastrar resposta rápida');
+        return res.json();
+    },
+
+    async getDashboardMetrics() {
+        const res = await fetch(BASE_URL + '/crm/dashboard/metrics', { headers: getHeaders() });
+        if (!res.ok) throw new Error('Falha ao buscar métricas do dashboard');
         return res.json();
     }
 };

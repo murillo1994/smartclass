@@ -7,6 +7,9 @@ from src.config import Config
 from datetime import datetime, timedelta
 from functools import wraps
 
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func
+
 api_bp = Blueprint('api', __name__)
 
 def require_auth(f):
@@ -21,7 +24,7 @@ def require_auth(f):
             return jsonify({"error": "Formato de token inválido"}), 401
             
         token = parts[1]
-        if token != "unic_secure_admin_session_token":
+        if token != Config.ADMIN_API_TOKEN:
             return jsonify({"error": "Token inválido ou expirado"}), 401
             
         return f(*args, **kwargs)
@@ -36,7 +39,7 @@ def login():
     password = data.get('password')
     
     if username == Config.ADMIN_USERNAME and password == Config.ADMIN_PASSWORD:
-        return jsonify({"success": True, "token": "unic_secure_admin_session_token"}), 200
+        return jsonify({"success": True, "token": Config.ADMIN_API_TOKEN}), 200
         
     return jsonify({"error": "Usuário ou senha incorretos"}), 401
 
@@ -46,20 +49,35 @@ def login():
 @require_auth
 def get_leads():
     """
-    Retorna a lista de todos os leads/pacientes cadastrados com suas últimas mensagens.
+    Retorna a lista otimizada dos leads/pacientes cadastrados com suas últimas mensagens.
+    Possui limite de segurança (200) para preservar a RAM na VPS.
     """
-    patients = Patient.query.order_by(Patient.updated_at.desc()).all()
+    patients = Patient.query.order_by(Patient.updated_at.desc()).limit(200).all()
+    if not patients:
+        return jsonify([]), 200
+
+    patient_ids = [p.id for p in patients]
+    
+    # Otimização N+1: Busca todas as últimas mensagens dos pacientes de uma só vez
+    subq = db.session.query(
+        Message.patient_id,
+        func.max(Message.id).label('max_msg_id')
+    ).filter(Message.patient_id.in_(patient_ids)).group_by(Message.patient_id).subquery()
+    
+    latest_messages = db.session.query(Message).join(
+        subq, Message.id == subq.c.max_msg_id
+    ).all()
+    
+    msg_map = {m.patient_id: m for m in latest_messages}
     results = []
     
     for p in patients:
         lead_dict = p.to_dict()
-        
-        # Buscar última mensagem
-        last_msg = Message.query.filter_by(patient_id=p.id).order_by(Message.created_at.desc()).first()
+        last_msg = msg_map.get(p.id)
         if last_msg:
             lead_dict['last_message'] = {
                 'content': last_msg.content,
-                'created_at': last_msg.created_at.isoformat()
+                'created_at': last_msg.created_at.isoformat() if last_msg.created_at else None
             }
         else:
             lead_dict['last_message'] = None
@@ -67,6 +85,7 @@ def get_leads():
         results.append(lead_dict)
         
     return jsonify(results), 200
+
 
 @api_bp.route('/leads/<int:lead_id>', methods=['PATCH'])
 @require_auth
@@ -142,25 +161,26 @@ def send_manual_message(lead_id):
 @require_auth
 def get_appointments():
     """
-    Retorna a lista de agendamentos no calendário.
+    Retorna a lista de agendamentos no calendário otimizada via joinedload.
     """
-    appointments = Appointment.query.filter_by(status='confirmado').order_by(Appointment.start_time.asc()).all()
+    appointments = Appointment.query.options(
+        joinedload(Appointment.patient),
+        joinedload(Appointment.procedure)
+    ).filter_by(status='confirmado').order_by(Appointment.start_time.asc()).all()
     results = []
     
     for appt in appointments:
-        patient = Patient.query.get(appt.patient_id)
-        procedure = Procedure.query.get(appt.procedure_id)
-        
         results.append({
             "id": appt.id,
-            "patient": patient.to_dict() if patient else None,
-            "procedure": procedure.to_dict() if procedure else None,
-            "start_time": appt.start_time.isoformat(),
-            "end_time": appt.end_time.isoformat(),
+            "patient": appt.patient.to_dict() if appt.patient else None,
+            "procedure": appt.procedure.to_dict() if appt.procedure else None,
+            "start_time": appt.start_time.isoformat() if appt.start_time else None,
+            "end_time": appt.end_time.isoformat() if appt.end_time else None,
             "status": appt.status
         })
         
     return jsonify(results), 200
+
 
 @api_bp.route('/appointments', methods=['POST'])
 @require_auth

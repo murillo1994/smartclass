@@ -1,59 +1,112 @@
-# Pesquisas e Decisões Técnicas: Sistema Unic Clinic
+﻿# Pesquisa Técnica e Arquitetura Avançada: CRM WhatsApp SaaS Multi-Tenant
 
-Este documento descreve as pesquisas técnicas, o processo de tomada de decisão e a lógica arquitetural do ecossistema da Unic Clinic.
-
-## 1. Integração com Evolution API (Serviço de WhatsApp)
-
-### Decisão
-Integrar com a Evolution API através de webhooks HTTP para receber mensagens recebidas no WhatsApp e utilizar sua API HTTP para enviar mensagens de resposta.
-
-### Lógica
-A Evolution API é uma API de alto desempenho que abstrai os protocolos internos do WhatsApp Web/Cloud. Ela é executada na mesma VPS, permitindo uma comunicação local e de baixíssima latência entre ela e o backend Flask.
-
-### Detalhes do Evento do Webhook
-- Escutaremos especificamente os eventos do tipo `MESSAGES_UPSERT`.
-- O payload de entrada contém detalhes do remetente (`remoteJid`), tipo da mensagem (ex: texto, áudio, imagem) e o conteúdo de texto.
-- Endpoint de envio: `POST /message/sendText/{instanceName}` com os headers `apikey` e corpo JSON contendo `{"number": "...", "text": "..."}`.
-
-### Alternativas Consideradas
-- *API Oficial do WhatsApp Cloud*: Rejeitada devido à alta fricção de configuração inicial, cobrança por sessão de conversa e necessidade estrita de modelos de templates pré-aprovados para mensagens ativas, o que inviabilizaria a conversa fluida com a IA.
+**Data**: 30-08-2026  
+**Autor**: Arquiteto de Software & Full-Stack Sênior  
+**Versão**: 2.1.0 (Refinada com Proteções de Produção: Soft Delete, SSE Real-Time, Storage S3/R2, Multi-Número e Segurança de Webhook)
 
 ---
 
-## 2. Orquestração de LLM e Function Calling
+## 1. Estratégia de Exclusão de Dados: Soft Deletes vs. ON DELETE CASCADE
 
-### Decisão
-Utilizar o backend Flask em Python com o SDK oficial da OpenAI (`openai`). O agente executará com o modelo GPT-4o (ou GPT-4o-mini para economia de custos) usando chamadas de funções (**Chat Completions com Function Calling**) em um loop de conversação.
-Definiremos as seguintes funções para a IA:
-1. `check_available_slots(date: str)`: Retorna os horários livres na grade de agendamentos para uma determinada data.
-2. `book_appointment(patient_name: str, phone: str, procedure_id: int, start_time: str)`: Efetua a reserva do horário no banco de dados.
-3. `get_procedures()`: Retorna a lista de procedimentos disponíveis na clínica com preços e durações.
+### O Risco do CASCADE Cego:
+Em ambientes de CRM e suporte, histórico de atendimento é patrimônio comercial e jurídico. Se a exclusão de um atendente ou de uma coluna do funil disparar ON DELETE CASCADE:
+- Conversas ativas e históricas seriam deletadas permanentemente.
+- Métricas de desempenho passadas seriam corrompidas.
+- O cliente perderia dados de leads quentes, gerando cancelamento imediato (*churn*).
 
-### Lógica
-O Function Calling permite que a LLM aja como um controlador de dados estruturado e seguro. O modelo gera os argumentos JSON, e o backend em Python executa as consultas no banco de dados. Isso previne injeção direta de SQL e permite validação rigorosa dos parâmetros pelo backend.
-
----
-
-## 3. Modelo de Banco de Dados (PostgreSQL)
-
-### Decisão
-Criar um banco de dados relacional PostgreSQL com tabelas dedicadas para:
-- `patients` (leads): rastreia contatos e a etapa ativa no Kanban.
-- `messages`: armazena o histórico do chat para visualização no CRM e envio de contexto para a IA.
-- `procedures`: lista de procedimentos estéticos oferecidos pela clínica.
-- `appointments`: agendamentos com associação a paciente e procedimento.
-
-### Lógica
-O PostgreSQL garante consistência transacional ACID, o que é fundamental para evitar a reserva dupla (concorrência no mesmo horário de agendamento).
+### Decisão Arquitetural:
+- **Soft Deletes (Exclusão Lógica)** para todas as entidades operacionais: users, contacts, unnel_stages, conversations e messages.
+  - Implementação via coluna deleted_at TIMESTAMP WITH TIME ZONE NULL.
+  - Registros com deleted_at IS NOT NULL são omitidos das consultas operacionais através de filtros padrão no ORM/SQLAlchemy.
+  - Permite restauração em caso de exclusão acidental por parte do cliente ("Lixeira do CRM").
+- **ON DELETE CASCADE Restrito**:
+  - Reservado **exclusivamente** para o nível raiz de 	enants(id). Se o Super Admin deliberadamente deletar e purgar a empresa cliente do sistema, todos os seus dados serão expurgados conforme a LGPD/GDPR.
+- **ON DELETE SET NULL / RESTRICT**:
+  - ssigned_user_id em conversations: se o atendente for inativado, a conversa vai para ssigned_user_id = NULL (não atribuída), mantendo todo o histórico intacto.
+  - current_stage_id em contacts: se uma coluna for excluída logicamente, os leads são migrados para a primeira coluna padrão ou ficam em stage_id = NULL.
 
 ---
 
-## 4. Framework Frontend (SvelteKit + Tailwind CSS)
+## 2. Camada de Tempo Real (Real-Time): SSE vs. WebSockets vs. Pusher
 
-### Decisão
-Implementar SvelteKit tanto para a landing page institucional pública quanto para o painel CRM administrativo da clínica.
+### Comparativo Técnico:
 
-### Lógica
-- **Desempenho**: SvelteKit suporta geração de páginas estáticas (SSG) e renderização no servidor (SSR), o que garante carregamentos instantâneos cruciais para campanhas de tráfego pago.
-- **Reatividade**: Gerenciamento de estado direto e transições nativas eficientes do Svelte, ideais para o comportamento dinâmico do Kanban do CRM.
-- **Tailwind CSS**: Agiliza a criação de uma interface premium e minimalista de clínica-boutique.
+| Critério | Server-Sent Events (SSE) | Flask-SocketIO (WebSockets) | Pusher / Ably (Gerenciado) |
+| :--- | :--- | :--- | :--- |
+| **Complexidade no Flask** | 🟢 **Baixíssima** (endpoint nativo de streaming 	ext/event-stream) | 🔴 **Alta** (exige eventlet/gevent, conflita com workers sync do Gunicorn) | 🟡 **Baixa** (SDK HTTP), mas cria dependência externa paga |
+| **Consumo de Recursos** | 🟢 **Levíssimo** (conexão HTTP padrão mantida aberta, nativa em HTTP/2) | 🟡 Médio/Alto por socket bidirecional | 🟢 Externo |
+| **Suporte no Navegador** | 🟢 **Nativo** (EventSource API no SvelteKit sem libs pesadas) | 🟡 Exige biblioteca client-side socket.io | 🟡 Exige SDK proprietário |
+| **Direção dos Dados** | 🟢 Unidirecional (Servidor ➔ Cliente): exatamente o que precisamos para novas mensagens, status e digitação | 🟡 Bidirecional (overkill, pois envios já são feitos via REST POST) | 🟢 Unidirecional |
+| **Custo de Infraestrutura**| 🟢 **Zero custo adicional** (roda no próprio servidor) | 🟢 Roda no próprio servidor | 🔴 Custo por conexões simultâneas e volume de msgs |
+
+### Decisão Arquitetural:
+**Server-Sent Events (SSE) com Redis Pub/Sub**:
+- O SvelteKit abre uma conexão persistente única para /api/v1/crm/events/stream?token=<jwt>.
+- O backend Flask escuta o canal Redis 	enant:{tenant_id}.
+- Quando a Evolution API bate no Webhook do Flask com uma nova mensagem, o Flask publica o evento no Redis (message.created, conversation.updated, stage.changed).
+- A thread SSE entrega o evento JSON imediatamente ao navegador do atendente em **menos de 50 milissegundos**.
+- Sem necessidade de F5, sem recarregar a tela, com reconexão automática nativa do navegador.
+
+---
+
+## 3. Gestão de Mídias (Áudios, Imagens e Documentos): S3 / Cloudflare R2
+
+### O Risco do Armazenamento Local ou Base64:
+- Mensagens de voz (PTT), fotos de comprovantes e documentos em PDF pesam em média 500 KB a 5 MB cada.
+- Se salvos em base64 no PostgreSQL: o banco incha centenas de gigabytes em meses, estourando custos de backup e travando consultas.
+- Se salvos no disco local da VPS: inviabiliza balanceamento de carga, migração de servidor e Docker efêmero.
+
+### Decisão Arquitetural:
+**Offloading Nativo da Evolution API v2 para Object Storage (S3 / Cloudflare R2 / MinIO)**:
+- A Evolution API v2 possui suporte nativo a S3/R2 (S3_ENABLED=true, S3_BUCKET, S3_ACCESS_KEY, S3_ENDPOINT).
+- Fluxo de Entrada:
+  1. O cliente envia uma mensagem de áudio ou foto no WhatsApp.
+  2. A Evolution API processa o arquivo, faz o upload direto para o bucket S3/R2 e gera a URL pública ou assinada.
+  3. No payload do Webhook para o Flask, a Evolution envia apenas o campo data.message.audioMessage.url ou mediaUrl.
+  4. O PostgreSQL armazena apenas a string da URL (media_url TEXT) e o tipo MIME (media_type).
+- O banco de dados armazena apenas metadados ultraleves, garantindo escalabilidade infinita com custo baixíssimo (Cloudflare R2 tem custo zero de transferência de dados/egress).
+
+---
+
+## 4. Multi-Instâncias por Tenant (Future-Proofing Multi-Número)
+
+### O Problema do Vínculo Direto Tenant ── Conversa:
+Clientes maiores do CRM frequentemente utilizam:
+- Número 1: Equipe de Vendas (WhatsApp Comercial)
+- Número 2: Equipe de Suporte / SAC
+- Número 3: Cobrança / Financeiro
+
+Se a conversa não sabe por qual número o cliente chamou, atendentes de suporte responderão conversas de vendas e vice-versa.
+
+### Decisão Arquitetural:
+**Modelo whatsapp_instances ──1:N──> conversations**:
+- A tabela whatsapp_instances pertence a um 	enant_id e possui:
+  - id (UUID, PK)
+  - 	enant_id (UUID, FK)
+  - 
+ame (VARCHAR) — Ex: "Vendas Matriz", "SAC Suporte"
+  - phone_number (VARCHAR)
+  - instance_name (VARCHAR) — Identificador único na Evolution API
+- A tabela conversations possui obrigatoriamente:
+  - instance_id (UUID, FK ➔ whatsapp_instances.id)
+  - 	enant_id (UUID, FK ➔ 	enants.id para conferência rápida de isolamento)
+- A Caixa de Entrada no SvelteKit ganha um filtro por número de WhatsApp:
+  - *"Exibindo conversas de: [Todos os Números ▼] ou [Vendas Matriz (5511...)]"*
+- O envio de mensagens pelo atendente direciona a requisição da Evolution API especificamente para a instância instance.instance_name vinculada àquela conversa.
+
+---
+
+## 5. Segurança Rigorosa do Webhook
+
+### O Risco de Endpoints Abertos:
+A rota /api/v1/webhooks/evolution fica exposta à internet para receber os disparos da Evolution API. Sem proteção:
+- Invasores poderiam forjar mensagens falsas e injetar contatos fictícios no CRM.
+- Ataques de DoS poderiam sobrecarregar o processamento do backend.
+
+### Decisão Arquitetural:
+**Autenticação Dupla por Header de Assinatura (X-Webhook-Secret ou Bearer Token)**:
+- Na configuração do webhook na Evolution API, registra-se um segredo seguro (UUID v4 ou hash SHA-256) em webhook_secret.
+- O decorator @require_webhook_token no Flask:
+  1. Inspeciona o header X-Webhook-Secret (ou Authorization: Bearer <token>).
+  2. Valida se o token confere com o EVOLUTION_WEBHOOK_SECRET global ou com o segredo registrado da instância correspondente.
+  3. Se inválido ou ausente: rejeita imediatamente com HTTP 401 Unauthorized e bloqueia a execução.

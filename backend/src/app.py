@@ -1,79 +1,104 @@
+import logging
 from flask import Flask, jsonify
-from flask_cors import CORS
 from src.config import Config
-from src.database import db
+from src.routes.telemetry_routes import telemetry_bp
+from src.routes.auth_routes import auth_bp
+from src.database import init_db
 
-def create_app():
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+def create_app(config_class=Config):
+    """Application Factory do Flask para o SmartClass."""
     app = Flask(__name__)
-    app.config.from_object(Config)
+    app.config.from_object(config_class)
 
-    # Enable CORS for frontend requests
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # Registrar blueprints
+    app.register_blueprint(telemetry_bp)
+    app.register_blueprint(auth_bp)
 
-    # Initialize extensions
-    db.init_app(app)
+    # Configuração de CORS para permitir requisições assíncronas do frontend estático
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
 
-    # Register blueprints (routes)
-    from src.routes.webhook import webhook_bp
-    from src.routes.api import api_bp
+    # Handlers globais para respostas semânticas padronizadas
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({
+            "status": "error",
+            "message": "Requisição inválida.",
+            "code": 400
+        }), 400
 
-    app.register_blueprint(webhook_bp, url_prefix='/webhook')
-    app.register_blueprint(api_bp, url_prefix='/api')
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({
+            "status": "error",
+            "message": "Recurso não encontrado.",
+            "code": 404
+        }), 404
 
-    @app.route('/')
-    def health():
-        return jsonify({"status": "healthy", "service": "unic_backend"}), 200
+    @app.errorhandler(405)
+    def method_not_allowed(error):
+        return jsonify({
+            "status": "error",
+            "message": "Método HTTP não permitido para este endpoint.",
+            "code": 405
+        }), 405
 
-    # Automatically create database tables within application context
-    with app.app_context():
-        db.create_all()
-        # Check and add missing columns to patients table
-        try:
-            from sqlalchemy import text
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='patients'"))
-            existing_cols = [row[0] for row in result.fetchall()]
-            
-            if 'is_imported' not in existing_cols:
-                db.session.execute(text("ALTER TABLE patients ADD COLUMN is_imported BOOLEAN DEFAULT FALSE NOT NULL"))
-                db.session.commit()
-                logging.info("Added missing column 'is_imported' to 'patients' table.")
-                
-            if 'ignored' not in existing_cols:
-                db.session.execute(text("ALTER TABLE patients ADD COLUMN ignored BOOLEAN DEFAULT FALSE NOT NULL"))
-                db.session.commit()
-                logging.info("Added missing column 'ignored' to 'patients' table.")
-        except Exception as e:
-            logging.error(f"Error checking/migrating patients table columns: {e}")
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        return jsonify({
+            "status": "error",
+            "message": "Erro interno do servidor.",
+            "code": 500
+        }), 500
 
-        # Check and add missing columns to system_settings table
-        try:
-            from sqlalchemy import text
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='system_settings'"))
-            existing_settings_cols = [row[0] for row in result.fetchall()]
-            
-            new_settings_cols = {
-                'clinic_name': "VARCHAR(255) DEFAULT 'Unic Clinic'",
-                'clinic_address': "TEXT DEFAULT ''",
-                'clinic_phones': "VARCHAR(255) DEFAULT ''",
-                'clinic_addresses': "TEXT DEFAULT '[]'",
-                'clinic_phones_list': "TEXT DEFAULT '[]'",
-                'clinic_instagram': "VARCHAR(255) DEFAULT ''",
-                'clinic_responsible': "VARCHAR(255) DEFAULT ''",
-                'clinic_working_hours': "VARCHAR(255) DEFAULT 'Segunda a Sexta, das 09:00 às 18:00'",
-                'clinic_custom_notes': "TEXT DEFAULT ''",
-                'clinic_custom_rules': "TEXT DEFAULT '[]'"
-            }
-            
-            for col_name, col_def in new_settings_cols.items():
-                if col_name not in existing_settings_cols:
-                    db.session.execute(text(f"ALTER TABLE system_settings ADD COLUMN {col_name} {col_def}"))
-                    db.session.commit()
-                    logging.info(f"Added missing column '{col_name}' to 'system_settings' table.")
-        except Exception as e:
-            logging.error(f"Error checking/migrating system_settings table columns: {e}")
+    import os
+    from flask import send_from_directory
+
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
+
+    # Rota raiz básica
+    @app.route("/", methods=["GET"])
+    def root():
+        if os.path.exists(os.path.join(frontend_dir, "dashboard.html")):
+            return send_from_directory(frontend_dir, "dashboard.html")
+        return jsonify({
+            "message": "SmartClass IoT Telemetry Ingestion Service",
+            "version": "1.0.0",
+            "status": "online"
+        }), 200
+
+    @app.route("/dashboard", methods=["GET"])
+    @app.route("/dashboard.html", methods=["GET"])
+    def dashboard():
+        return send_from_directory(frontend_dir, "dashboard.html")
+
+    @app.route("/login", methods=["GET"])
+    @app.route("/login.html", methods=["GET"])
+    def login_page():
+        return send_from_directory(frontend_dir, "login.html")
+
+    @app.route("/js/<path:filename>", methods=["GET"])
+    def serve_js(filename):
+        return send_from_directory(os.path.join(frontend_dir, "js"), filename)
+
+    # Tenta inicializar as tabelas do banco de dados na inicialização
+    try:
+        init_db()
+    except Exception as e:
+        logger.warning(f"Inicialização automática do banco postergada: {e}")
 
     return app
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=app.config['DEBUG'])
+    app.run(host="0.0.0.0", port=Config.PORT, debug=Config.DEBUG)

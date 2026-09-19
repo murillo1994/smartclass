@@ -1,75 +1,84 @@
-# Guia de Início Rápido: Configuração do Sistema Unic Clinic
+﻿# Guia de Inicialização Rápida (Quickstart) — Evolution CRM SaaS
 
-Este guia orienta na configuração e execução local do ecossistema Unic Clinic usando Docker Compose.
-
-## Pré-requisitos
-
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-- Uma chave de API ativa da OpenAI
-- Uma instância funcional configurada na Evolution API (ex: `unic_clinic`)
+Este guia orienta como executar o ambiente localmente e testar o fluxo completo de multi-inquilino (Multi-Tenant).
 
 ---
 
-## 1. Configurações de Ambiente
+## 1. Pré-requisitos
+- **Python**: 3.10+ (com Flask, SQLAlchemy, psycopg2, pyjwt, bcrypt)
+- **Node.js**: 18+ (com npm e SvelteKit)
+- **PostgreSQL**: Rodando localmente ou via Docker
+- **Evolution API v2**: Executando na porta 8080 ou 8081
 
-Crie um arquivo `.env` na raiz do projeto contendo as seguintes propriedades:
+---
 
-```env
-# Configurações do Banco de Dados
-POSTGRES_USER=unic_admin
-POSTGRES_PASSWORD=unic_secure_pass
-POSTGRES_DB=unic_clinic_db
-DATABASE_URL=postgresql://unic_admin:unic_secure_pass@unic_db:5432/unic_clinic_db
+## 2. Variáveis de Ambiente (.env)
+`env
+# Banco de Dados Multi-Tenant
+DATABASE_URL=postgresql://unic_admin:unic_secure_pass@localhost:5433/unic_clinic_db
 
-# API da OpenAI
-OPENAI_API_KEY=sua_chave_da_api_openai_aqui
+# Chave Criptográfica JWT
+JWT_SECRET_KEY=sua_chave_mestra_ultra_secreta_jwt_2026
+JWT_ACCESS_TOKEN_EXPIRES=86400
 
-# Configurações da Evolution API
-EVOLUTION_API_URL=http://seu-servidor-evolution-api:8080
-EVOLUTION_API_KEY=sua_chave_global_da_evolution_aqui
-EVOLUTION_INSTANCE_NAME=unic_clinic
-EVOLUTION_WEBHOOK_SECRET=seu_segredo_webhook_opcional
+# Evolution API
+EVOLUTION_API_URL=http://localhost:8080
+EVOLUTION_API_KEY=admin123
 
-# Configurações do Flask
+# Servidor Flask
+PORT=5010
 FLASK_ENV=development
-PORT=5000
 
-# Configurações do Frontend (SvelteKit)
-PUBLIC_API_URL=http://localhost:5000/api
-```
-
----
-
-## 2. Executando a Aplicação
-
-Para iniciar os contêineres do banco de dados, backend e frontend na ordem correta, execute:
-
-```bash
-docker-compose up --build
-```
-
-Isso inicializará:
-1. **`unic_db`** (PostgreSQL) na porta 5432 (apenas rede interna).
-2. **`unic_backend`** (Flask API) na porta 5000.
-3. **`unic_frontend`** (Site e CRM SvelteKit) na porta 5173.
+# Frontend SvelteKit
+PUBLIC_API_URL=http://localhost:5010/api/v1
+`
 
 ---
 
-## 3. Semeando Procedimentos no Banco de Dados
+## 3. Inicialização e Migrações
 
-Assim que os contêineres estiverem em execução, as migrações do banco serão aplicadas automaticamente. Você pode preencher os procedimentos da clínica no banco de dados executando o script de sementes (seed) do backend:
-
-```bash
-# Comando para rodar o script de inserção de dados iniciais do backend
-docker-compose exec unic_backend python seed_db.py
-```
+### 3.1. Criar e Semear o Banco com Dados Iniciais SaaS
+`ash
+# Executa a criação das tabelas e o seed do SuperAdmin e de 2 Empresas de Teste
+python backend/seed_saas.py
+`
+Isso criará:
+1. **Super Admin**: super@crm.com / dmin123
+2. **Empresa A**: dmin@clinicaalpha.com / dmin123 (2 atendentes + funil padrão)
+3. **Empresa B**: dmin@clinicabeta.com / dmin123 (1 atendente + funil padrão)
 
 ---
 
-## 4. Configurando Webhook no Painel da Evolution API
+## 4. Executando os Serviços
 
-Configure o webhook na Evolution API apontando para o seu backend:
-- **URL do Webhook**: `http://<ip-da-sua-vps>:5000/webhook/evolution`
-- **Eventos**: Selecione `MESSAGES_UPSERT`
-- **Status**: Ativo/Habilitado
+### Terminal 1 — Backend (Flask)
+`ash
+cd backend
+python -m src.app
+`
+*API rodando em*: http://localhost:5010
+
+### Terminal 2 — Frontend (SvelteKit)
+`ash
+cd frontend
+npm run dev
+`
+*Interface rodando em*: http://localhost:5173
+
+---
+
+## 5. Roteiro de Teste do Isolamento Multi-Tenant
+
+1. **Acesse** http://localhost:5173/admin/login.
+2. **Faça login como SuperAdmin** (super@crm.com):
+   - Visualize a lista de todas as empresas cadastradas (Clínica Alpha, Clínica Beta).
+   - Teste suspender e reativar uma empresa.
+3. **Abra uma janela anônima e faça login na Empresa A** (dmin@clinicaalpha.com):
+   - Verifique que **apenas** os contatos e conversas da Clínica Alpha são exibidos.
+   - Conecte o WhatsApp via QR Code da instância 	enant_alpha.
+4. **Abra outra janela e faça login na Empresa B** (dmin@clinicabeta.com):
+   - Confirme o isolamento rigoroso: nenhuma mensagem, tag ou lead da Empresa A aparece aqui.
+5. **Faça login como Atendente da Empresa A**:
+   - Responda mensagens em tempo real no Inbox compartilhado.
+   - Mova cards de leads no quadro Kanban.
+   - Adicione anotações internas amarelas.
